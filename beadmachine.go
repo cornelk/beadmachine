@@ -7,6 +7,7 @@ import (
 	"image/color"
 	"image/png"
 	"io/ioutil"
+	"math"
 	"os"
 	"runtime"
 	"sync"
@@ -32,10 +33,13 @@ var (
 	paletteFileName = kingpin.Flag("palette", "Filename of the bead palette.").Short('p').Default("colors_hama.json").String()
 	newWidth        = kingpin.Flag("width", "Resize image to width.").Short('w').Default("0").Int()
 	newHeight       = kingpin.Flag("height", "Resize image to height.").Short('h').Default("0").Int()
+	beadStyle       = kingpin.Flag("bead", "Make output file look like a beads board.").Short('b').Bool()
+	greyScale       = kingpin.Flag("grey", "Convert the image to greyscale.").Short('g').Bool()
 
 	targetIlluminant = &chromath.IlluminantRefD50
 	labTransformer   = chromath.NewLabTransformer(targetIlluminant)
 	rgbTransformer   = chromath.NewRGBTransformer(&chromath.SpaceSRGB, &chromath.AdaptationBradford, targetIlluminant, &chromath.Scaler8bClamping, 1.0, nil)
+	beadFillPixel    = color.RGBA{225, 225, 225, 255} // light grey
 
 	colorMatchCache     = make(map[color.Color]string)
 	colorMatchCacheLock sync.RWMutex
@@ -114,6 +118,31 @@ func calculateBeadUsage(beadUsageChan <-chan string) {
 	beadStatsDone <- struct{}{}
 }
 
+// setOutputImagePixel sets a pixel in the output image or draws a bead in beadStyle mode
+func setOutputImagePixel(outputImage *image.RGBA, coordinates image.Point, newRGB RGB) {
+	rgbaMatch := color.RGBA{newRGB.R, newRGB.G, newRGB.B, 255} // A 255 = no transparency
+	if *beadStyle {
+		for y := 0; y < 8; y++ {
+			for x := 0; x < 8; x++ {
+				if (x%7 == 0 && y%7 == 0) || (x > 2 && x < 5 && y > 2 && y < 5) { // all corner pixel + 2x2 in center
+					outputImage.SetRGBA((coordinates.X*8)+x, (coordinates.Y*8)+y, beadFillPixel)
+				} else {
+					outputImage.SetRGBA((coordinates.X*8)+x, (coordinates.Y*8)+y, rgbaMatch)
+				}
+			}
+		}
+	} else {
+		outputImage.SetRGBA(coordinates.X, coordinates.Y, rgbaMatch)
+	}
+}
+
+// calculateBeadBoardsNeeded calculates the needed bead boards based on the standard size of 29 beads for a dimension
+func calculateBeadBoardsNeeded(dimension int) int {
+	neededFloat := float64(dimension) / 29
+	neededFloat = math.Floor(neededFloat + .5)
+	return int(neededFloat) // round up
+}
+
 func main() {
 	kingpin.CommandLine.Help = "Bead pattern creator."
 	kingpin.Parse()
@@ -134,14 +163,32 @@ func main() {
 	imageBounds := inputImage.Bounds()
 	fmt.Println("Input image width:", imageBounds.Dx(), "height:", imageBounds.Dy())
 
+	if *greyScale { // better looking results when doing before a possible resize
+		inputImage = imaging.Grayscale(inputImage)
+	}
+
+	resized := false
 	if *newWidth > 0 || *newHeight > 0 {
 		inputImage = imaging.Resize(inputImage, *newWidth, *newHeight, imaging.Lanczos)
 		imageBounds = inputImage.Bounds()
-		fmt.Println("Output image width:", imageBounds.Dx(), "height:", imageBounds.Dy())
+		resized = true
 	}
 	pixelCount := imageBounds.Dx() * imageBounds.Dy()
 
-	outputImage := image.NewRGBA(imageBounds)
+	outputImageBounds := imageBounds
+	if resized || *beadStyle {
+		fmt.Println("Beads width:", outputImageBounds.Dx(), "height:", outputImageBounds.Dy())
+	}
+	fmt.Println("Bead boards width:", calculateBeadBoardsNeeded(outputImageBounds.Dx()), "height:", calculateBeadBoardsNeeded(outputImageBounds.Dy()))
+
+	if *beadStyle { // each pixel will be a bead of 8x8 pixel
+		outputImageBounds.Max.X *= 8
+		outputImageBounds.Max.Y *= 8
+	}
+	if resized || *beadStyle {
+		fmt.Println("Output image width:", outputImageBounds.Dx(), "height:", outputImageBounds.Dy())
+	}
+	outputImage := image.NewRGBA(outputImageBounds)
 
 	beadUsageChan := make(chan string, pixelCount)
 	workQueueChan := make(chan image.Point, cpuCount*2)
@@ -149,6 +196,7 @@ func main() {
 
 	var pixelWaitGroup sync.WaitGroup
 	pixelWaitGroup.Add(pixelCount)
+
 	go func() { // pixel channel worker goroutine
 		for {
 			select {
@@ -158,15 +206,14 @@ func main() {
 					oldPixel := inputImage.At(pixel.X, pixel.Y)
 					beadName, cached := FindSimilarColor(beadLab, oldPixel)
 					beadUsageChan <- beadName
-					matchRgb := beadConfig[beadName]
-					rgbaMatch := color.RGBA{matchRgb.R, matchRgb.G, matchRgb.B, 255} // A 255 = no transparency
-
 					if cached == false {
 						colorMatchCacheLock.Lock()
 						colorMatchCache[oldPixel] = beadName
 						colorMatchCacheLock.Unlock()
 					}
-					outputImage.SetRGBA(pixel.X, pixel.Y, rgbaMatch)
+
+					matchRgb := beadConfig[beadName]
+					setOutputImagePixel(outputImage, pixel, matchRgb)
 				}(pixel)
 			case <-workDone:
 				return

@@ -21,6 +21,10 @@ beadmachine is a bead pattern creator. Convert any imagine into a suitable color
   <dd>Resize image to width.</dd>
 <dt>-h=0</dt>
   <dd>Resize image to height.</dd>
+<dt>-g</dt>
+  <dd>Convert the image to greyscale.</dd>
+<dt>-b</dt>
+  <dd>Make output file look like a beads board.</dd>
 </dl>
 
 ### Example Usage
@@ -30,11 +34,12 @@ To convert the sample yoshi image to Hama bead colors:
 ./beadmachine -i examples/yoshi_thinking_in.png -o out.png
 ```
 
-<img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/yoshi_thinking_in.png" alt="Yoshi thinking in" height="64" width="58"/> converts to <img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/yoshi_thinking_out.png" alt="Yoshi thinking in" height="64" width="58"/>
+<img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/yoshi_thinking_in.png" alt="Yoshi thinking in" height="96" width="84"/> converts to <img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/yoshi_thinking_out.png" alt="Yoshi thinking out" height="96" width="84"/>
 
 And will print out a statistic:
 ```
-Image width: 28 height: 32
+Input image width: 28 height: 32
+...
 Bead colors used: 9
 Beads used for color 'H47 Pastel Green': 72
 Beads used for color 'H38 Neon orange': 18
@@ -47,6 +52,25 @@ Beads used for color 'H18 Black': 179
 Beads used for color 'H42 Flourescent green': 38
 Image processed in 4.0003ms
 ```
+
+To convert the sample Mona Lisa image to Hama bead colors, resize to a width of 58 pixel and create a bead style output:
+
+```bash
+./beadmachine -i examples/mona_lisa_color_restoration_in.jpg -o out.png -w 58 -b
+```
+
+<img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/mona_lisa_color_restoration_in.jpg" alt="Mona Lisa in"/> converts to <img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/mona_lisa_color_restoration_out.png" alt="Mona Lisa out" height="64" width="58"/>
+
+And will print out a statistic:
+```
+Input image width: 722 height: 1074
+Beads width: 58 height: 86
+Bead boards width: 2 height: 3
+Output image width: 464 height: 688
+Bead colors used: 19
+...
+```
+
 
 ### Installation
 You need to have a [Golang](http://golang.org/doc/install "") environment set up. Download beadmachine:
@@ -64,7 +88,6 @@ go build
 
 ### Todo
 - Export a text based beadable pattern
-- Create a bead like output image
 - Perler palette
 - Support for giving bead stocks as input
 - GUI
