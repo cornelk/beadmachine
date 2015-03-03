@@ -59,7 +59,7 @@ To convert the sample Mona Lisa image to Hama bead colors, resize to a width of 
 ./beadmachine -i examples/mona_lisa_color_restoration_in.jpg -o out.png -w 58 -b
 ```
 
-<img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/mona_lisa_color_restoration_in.jpg" alt="Mona Lisa in" height="550" width="369"/> -> <img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/mona_lisa_color_restoration_out.png" alt="Mona Lisa out" height="550" width="369"/>
+<img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/mona_lisa_color_restoration_in.jpg" alt="Mona Lisa in" height="461" width="310"/> -> <img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/mona_lisa_color_restoration_out.png" alt="Mona Lisa out" height="461" width="310"/>
 
 And will print out a statistic:
 ```bash
