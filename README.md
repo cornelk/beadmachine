@@ -34,7 +34,7 @@ To convert the sample yoshi image to Hama bead colors:
 ./beadmachine -i examples/yoshi_thinking_in.png -o out.png
 ```
 
-<img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/yoshi_thinking_in.png" alt="Yoshi thinking in" height="96" width="84"/> converts to <img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/yoshi_thinking_out.png" alt="Yoshi thinking out" height="96" width="84"/>
+<img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/yoshi_thinking_in.png" alt="Yoshi thinking in" height="96" width="84"/> -> <img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/yoshi_thinking_out.png" alt="Yoshi thinking out" height="96" width="84"/>
 
 And will print out a statistic:
 ```
@@ -59,7 +59,7 @@ To convert the sample Mona Lisa image to Hama bead colors, resize to a width of 
 ./beadmachine -i examples/mona_lisa_color_restoration_in.jpg -o out.png -w 58 -b
 ```
 
-<img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/mona_lisa_color_restoration_in.jpg" alt="Mona Lisa in"/> converts to <img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/mona_lisa_color_restoration_out.png" alt="Mona Lisa out" height="64" width="58"/>
+<img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/mona_lisa_color_restoration_in.jpg" alt="Mona Lisa in" height="400" width="268"/> -> <img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/mona_lisa_color_restoration_out.png" alt="Mona Lisa out" height="400" width="268"/>
 
 And will print out a statistic:
 ```
