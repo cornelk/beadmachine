@@ -15,6 +15,7 @@ import (
 	_ "image/gif"
 	_ "image/jpeg"
 
+	"github.com/disintegration/imaging"
 	chromath "github.com/jkl1337/go-chromath"
 	"github.com/jkl1337/go-chromath/deltae"
 	kingpin "gopkg.in/alecthomas/kingpin.v1"
@@ -29,6 +30,8 @@ var (
 	inputFileName   = kingpin.Flag("input", "Filename of image to process.").Short('i').Required().String()
 	outputFileName  = kingpin.Flag("output", "Output filename for the converted PNG image.").Short('o').PlaceHolder("OUTPUT.png").Required().String()
 	paletteFileName = kingpin.Flag("palette", "Filename of the bead palette.").Short('p').Default("colors_hama.json").String()
+	newWidth        = kingpin.Flag("width", "Resize image to width.").Short('w').Default("0").Int()
+	newHeight       = kingpin.Flag("height", "Resize image to height.").Short('h').Default("0").Int()
 
 	targetIlluminant = &chromath.IlluminantRefD50
 	labTransformer   = chromath.NewLabTransformer(targetIlluminant)
@@ -128,11 +131,17 @@ func main() {
 	defer imageReader.Close()
 
 	inputImage, _, err := image.Decode(imageReader)
-	inputBounds := inputImage.Bounds()
-	pixelCount := inputBounds.Dx() * inputBounds.Dy()
-	fmt.Println("Image width:", inputBounds.Dx(), "height:", inputBounds.Dy())
+	imageBounds := inputImage.Bounds()
+	fmt.Println("Input image width:", imageBounds.Dx(), "height:", imageBounds.Dy())
 
-	outputImage := image.NewRGBA(inputBounds)
+	if *newWidth > 0 || *newHeight > 0 {
+		inputImage = imaging.Resize(inputImage, *newWidth, *newHeight, imaging.Lanczos)
+		imageBounds = inputImage.Bounds()
+		fmt.Println("Output image width:", imageBounds.Dx(), "height:", imageBounds.Dy())
+	}
+	pixelCount := imageBounds.Dx() * imageBounds.Dy()
+
+	outputImage := image.NewRGBA(imageBounds)
 
 	beadUsageChan := make(chan string, pixelCount)
 	workQueueChan := make(chan image.Point, cpuCount*2)
@@ -168,8 +177,8 @@ func main() {
 	go calculateBeadUsage(beadUsageChan)
 
 	startTime := time.Now()
-	for y := inputBounds.Min.Y; y < inputBounds.Max.Y; y++ {
-		for x := inputBounds.Min.X; x < inputBounds.Max.X; x++ {
+	for y := imageBounds.Min.Y; y < imageBounds.Max.Y; y++ {
+		for x := imageBounds.Min.X; x < imageBounds.Max.X; x++ {
 			workQueueChan <- image.Point{x, y}
 		}
 	}

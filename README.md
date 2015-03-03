@@ -7,6 +7,7 @@ beadmachine is a bead pattern creator. Convert any imagine into a suitable color
 - Supports gif/jpg/png as input file formats
 - Color matching based on [CIEDE2000](http://en.wikipedia.org/wiki/Color_difference#CIEDE2000 "")
 - Included bead palettes: [Hama](http://www.hama.dk "")
+- Optional image resizing
 
 ### Command-line options:
 <dl>
@@ -16,6 +17,10 @@ beadmachine is a bead pattern creator. Convert any imagine into a suitable color
   <dd>Output filename for the converted PNG image.</dd>
 <dt>-p=colors_hama.json</dt>
   <dd>Filename of the bead palette.</dd>
+<dt>-w=0</dt>
+  <dd>Resize image to width.</dd>
+<dt>-h=0</dt>
+  <dd>Resize image to height.</dd>
 </dl>
 
 ### Example Usage
@@ -44,7 +49,7 @@ Image processed in 4.0003ms
 ```
 
 ### Installation
-You need to have a [Golang](http://golang.org/doc/install "") environment set up first. Download beadmachine:
+You need to have a [Golang](http://golang.org/doc/install "") environment set up. Download beadmachine:
 
 ```bash
 go get github.com/CornelK/beadmachine
@@ -58,7 +63,6 @@ go build
 ```
 
 ### Todo
-- Input image resizing
 - Export a text based beadable pattern
 - Create a bead like output image
 - Perler palette
