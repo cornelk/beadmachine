@@ -103,7 +103,7 @@ func main() {
 	kingpin.CommandLine.Help = "Bead pattern creator."
 	kingpin.Parse()
 
-	runtime.GOMAXPROCS(runtime.NumCPU()) // use all cores for concurrency
+	runtime.GOMAXPROCS(runtime.NumCPU()) // use all cores for parallelism
 
 	beadConfig, beadLab := LoadPalette(*paletteFileName)
 
