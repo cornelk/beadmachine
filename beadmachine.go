@@ -113,7 +113,7 @@ func calculateBeadUsage(beadUsageChan <-chan string) {
 
 	fmt.Printf("Bead colors used: %v\n", len(colorUsageCounts))
 	for usedColor, count := range colorUsageCounts {
-		fmt.Printf("Beads used for color '%s': %v\n", usedColor, count)
+		fmt.Printf("Beads used '%s': %v\n", usedColor, count)
 	}
 	beadStatsDone <- struct{}{}
 }

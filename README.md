@@ -37,19 +37,19 @@ To convert the sample yoshi image to Hama bead colors:
 <img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/yoshi_thinking_in.png" alt="Yoshi thinking in" height="96" width="84"/> -> <img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/yoshi_thinking_out.png" alt="Yoshi thinking out" height="96" width="84"/>
 
 And will print out a statistic:
-```
+```bash
 Input image width: 28 height: 32
 ...
 Bead colors used: 9
-Beads used for color 'H47 Pastel Green': 72
-Beads used for color 'H38 Neon orange': 18
-Beads used for color 'H4 Orange': 10
-Beads used for color 'H10 Green': 30
-Beads used for color 'H35 Neon red': 13
-Beads used for color 'H27 Beige': 11
-Beads used for color 'H1 White': 525
-Beads used for color 'H18 Black': 179
-Beads used for color 'H42 Flourescent green': 38
+Beads used 'H47 Pastel Green': 72
+Beads used 'H38 Neon orange': 18
+Beads used 'H4 Orange': 10
+Beads used 'H10 Green': 30
+Beads used 'H35 Neon red': 13
+Beads used 'H27 Beige': 11
+Beads used 'H1 White': 525
+Beads used 'H18 Black': 179
+Beads used 'H42 Flourescent green': 38
 Image processed in 4.0003ms
 ```
 
@@ -59,10 +59,10 @@ To convert the sample Mona Lisa image to Hama bead colors, resize to a width of 
 ./beadmachine -i examples/mona_lisa_color_restoration_in.jpg -o out.png -w 58 -b
 ```
 
-<img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/mona_lisa_color_restoration_in.jpg" alt="Mona Lisa in" height="400" width="268"/> -> <img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/mona_lisa_color_restoration_out.png" alt="Mona Lisa out" height="400" width="268"/>
+<img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/mona_lisa_color_restoration_in.jpg" alt="Mona Lisa in" height="550" width="369"/> -> <img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/mona_lisa_color_restoration_out.png" alt="Mona Lisa out" height="550" width="369"/>
 
 And will print out a statistic:
-```
+```bash
 Input image width: 722 height: 1074
 Beads width: 58 height: 86
 Bead boards width: 2 height: 3
@@ -70,7 +70,6 @@ Output image width: 464 height: 688
 Bead colors used: 19
 ...
 ```
-
 
 ### Installation
 You need to have a [Golang](http://golang.org/doc/install "") environment set up. Download beadmachine:
