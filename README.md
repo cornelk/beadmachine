@@ -29,17 +29,18 @@ To convert the sample yoshi image to Hama bead colors:
 
 And will print out a statistic:
 ```
-Image processed in 8.0004ms
+Image width: 28 height: 32
 Bead colors used: 9
-Beads used for color 'H42 Flourescent green': 38
-Beads used for color 'H10 Green': 30
 Beads used for color 'H47 Pastel Green': 72
+Beads used for color 'H38 Neon orange': 18
 Beads used for color 'H4 Orange': 10
+Beads used for color 'H10 Green': 30
 Beads used for color 'H35 Neon red': 13
+Beads used for color 'H27 Beige': 11
 Beads used for color 'H1 White': 525
 Beads used for color 'H18 Black': 179
-Beads used for color 'H38 Neon orange': 18
-Beads used for color 'H27 Beige': 11
+Beads used for color 'H42 Flourescent green': 38
+Image processed in 4.0003ms
 ```
 
 ### Installation
