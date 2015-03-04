@@ -27,6 +27,12 @@ type RGB struct {
 	R, G, B uint8
 }
 
+// BeadConfig configures a bead color
+type BeadConfig struct {
+	R, G, B   uint8
+	GreyShade bool
+}
+
 var (
 	inputFileName   = kingpin.Flag("input", "Filename of image to process.").Short('i').Required().String()
 	outputFileName  = kingpin.Flag("output", "Output filename for the converted PNG image.").Short('o').PlaceHolder("OUTPUT.png").Required().String()
@@ -47,14 +53,14 @@ var (
 )
 
 // LoadPalette loads a palette from a json file and returns a LAB color palette
-func LoadPalette(fileName string) (map[string]RGB, map[chromath.Lab]string) {
+func LoadPalette(fileName string) (map[string]BeadConfig, map[chromath.Lab]string) {
 	cfgData, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		fmt.Printf("File error: %v\n", err)
 		os.Exit(1)
 	}
 
-	cfg := make(map[string]RGB)
+	cfg := make(map[string]BeadConfig)
 	err = json.Unmarshal(cfgData, &cfg)
 	if err != nil {
 		fmt.Printf("Config json error: %v\n", err)
@@ -63,6 +69,10 @@ func LoadPalette(fileName string) (map[string]RGB, map[chromath.Lab]string) {
 
 	cfgLab := make(map[chromath.Lab]string)
 	for beadName, rgbOriginal := range cfg {
+		if *greyScale == true && rgbOriginal.GreyShade == false { // only process grey shades in greyscale mode
+			continue
+		}
+
 		rgb := chromath.RGB{float64(rgbOriginal.R), float64(rgbOriginal.G), float64(rgbOriginal.B)}
 		xyz := rgbTransformer.Convert(rgb)
 		lab := labTransformer.Invert(xyz)
@@ -119,8 +129,8 @@ func calculateBeadUsage(beadUsageChan <-chan string) {
 }
 
 // setOutputImagePixel sets a pixel in the output image or draws a bead in beadStyle mode
-func setOutputImagePixel(outputImage *image.RGBA, coordinates image.Point, newRGB RGB) {
-	rgbaMatch := color.RGBA{newRGB.R, newRGB.G, newRGB.B, 255} // A 255 = no transparency
+func setOutputImagePixel(outputImage *image.RGBA, coordinates image.Point, bead BeadConfig) {
+	rgbaMatch := color.RGBA{bead.R, bead.G, bead.B, 255} // A 255 = no transparency
 	if *beadStyle {
 		for y := 0; y < 8; y++ {
 			for x := 0; x < 8; x++ {

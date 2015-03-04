@@ -2,7 +2,8 @@
   "H1 White": {
     "r": 255,
     "g": 255,
-    "b": 255
+    "b": 255,
+    "GreyShade": true
   },
   "H2 Cream": {
     "r": 246,
@@ -80,14 +81,16 @@
     "b": 126
   },
   "H17 Grey": {
-    "r": 136,
-    "g": 141,
-    "b": 147
+    "r": 128,
+    "g": 128,
+    "b": 128,
+    "GreyShade": true
   },
   "H18 Black": {
     "r": 0,
     "g": 0,
-    "b": 0
+    "b": 0,
+    "GreyShade": true
   },
   "H20 Reddish Brown": {
     "r": 121,
@@ -105,9 +108,10 @@
     "b": 45
   },
   "H23 Translucent Black": {
-    "r": 108,
-    "g": 120,
-    "b": 118
+    "r": 50,
+    "g": 50,
+    "b": 50,
+    "GreyShade": true
   },
   "H24 Translucent Purple": {
     "r": 104,
@@ -263,5 +267,17 @@
     "r": 216,
     "g": 207,
     "b": 200
+  },
+  "H70 Light Grey": {
+    "r": 174,
+    "g": 174,
+    "b": 174,
+    "GreyShade": true
+  },
+  "H71 Dark Grey": {
+    "r": 79,
+    "g": 79,
+    "b": 79,
+    "GreyShade": true
   }
 }
