@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"image"
@@ -10,6 +11,7 @@ import (
 	"math"
 	"os"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -36,6 +38,7 @@ type BeadConfig struct {
 var (
 	inputFileName   = kingpin.Flag("input", "Filename of image to process.").Short('i').Required().String()
 	outputFileName  = kingpin.Flag("output", "Output filename for the converted PNG image.").Short('o').PlaceHolder("OUTPUT.png").Required().String()
+	htmlFileName    = kingpin.Flag("html", "Output filename for a HTML based bead pattern file.").Short('l').Default("pattern.html").String()
 	paletteFileName = kingpin.Flag("palette", "Filename of the bead palette.").Short('p').Default("colors_hama.json").String()
 	newWidth        = kingpin.Flag("width", "Resize image to width.").Short('w').Default("0").Int()
 	newHeight       = kingpin.Flag("height", "Resize image to height.").Short('h').Default("0").Int()
@@ -153,6 +156,41 @@ func calculateBeadBoardsNeeded(dimension int) int {
 	return int(neededFloat) // round up
 }
 
+// writeHTMLBeadInstructionFile writes a HTML file with instructions on how to make the bead based image
+func writeHTMLBeadInstructionFile(fileName string, outputImageBounds image.Rectangle, outputImage *image.RGBA, outputImageBeadNames []string) {
+	htmlFile, err := os.Create(fileName)
+	if err != nil {
+		fmt.Printf("Opening HTML output file failed: %v\n", err)
+		os.Exit(1)
+	}
+
+	w := bufio.NewWriter(htmlFile)
+	w.WriteString("<html>\n<body>\n<table>\n")
+
+	for y := outputImageBounds.Min.Y; y < outputImageBounds.Max.Y; y++ {
+		w.WriteString("<tr>") // write a line with colored cells
+		for x := outputImageBounds.Min.X; x < outputImageBounds.Max.X; x++ {
+			pixel := outputImage.RGBAAt(x, y)
+			colorstring := fmt.Sprintf("#%02X%02X%02X", pixel.R, pixel.G, pixel.B)
+			w.WriteString("<td bgcolor=\"" + colorstring + "\">&nbsp;</td>")
+		}
+		w.WriteString("</tr>\n")
+
+		w.WriteString("<tr>") // write a line with bead names
+		for x := outputImageBounds.Min.X; x < outputImageBounds.Max.X; x++ {
+			beadName := outputImageBeadNames[x+y*outputImageBounds.Max.X]
+			shortName := strings.Split(beadName, " ")
+			w.WriteString("<td>" + shortName[0] + "</td>") // only print first part of name
+		}
+		w.WriteString("</tr>\n")
+	}
+
+	w.WriteString("</table>\n</body>\n</html>\n")
+	w.Flush()
+	htmlFile.Close()
+
+}
+
 func main() {
 	kingpin.CommandLine.Help = "Bead pattern creator."
 	kingpin.Parse()
@@ -196,13 +234,15 @@ func main() {
 		outputImageBounds.Max.Y *= 8
 	}
 	if resized || *beadStyle {
-		fmt.Println("Output image width:", outputImageBounds.Dx(), "height:", outputImageBounds.Dy())
+		fmt.Println("Output image pixel width:", outputImageBounds.Dx(), "height:", outputImageBounds.Dy())
 	}
+	fmt.Printf("Output image width: %v cm, height: %v cm\n", float64(outputImageBounds.Dx())*0.5, float64(outputImageBounds.Dy())*0.5)
 	outputImage := image.NewRGBA(outputImageBounds)
 
 	beadUsageChan := make(chan string, pixelCount)
 	workQueueChan := make(chan image.Point, cpuCount*2)
 	workDone := make(chan struct{})
+	outputImageBeadNames := make([]string, pixelCount)
 
 	var pixelWaitGroup sync.WaitGroup
 	pixelWaitGroup.Add(pixelCount)
@@ -222,6 +262,7 @@ func main() {
 						colorMatchCacheLock.Unlock()
 					}
 
+					outputImageBeadNames[pixel.X+pixel.Y*outputImageBounds.Max.X] = beadName
 					matchRgb := beadConfig[beadName]
 					setOutputImagePixel(outputImage, pixel, matchRgb)
 				}(pixel)
@@ -249,9 +290,13 @@ func main() {
 	elapsedTime := time.Since(startTime)
 	fmt.Printf("Image processed in %s\n", elapsedTime)
 
+	if len(*htmlFileName) > 0 {
+		writeHTMLBeadInstructionFile(*htmlFileName, outputImageBounds, outputImage, outputImageBeadNames)
+	}
+
 	imageWriter, err := os.Create(*outputFileName)
 	if err != nil {
-		fmt.Printf("Opening output image file failed: %v\n", err)
+		fmt.Printf("Opening image output file failed: %v\n", err)
 		os.Exit(1)
 	}
 	defer imageWriter.Close()

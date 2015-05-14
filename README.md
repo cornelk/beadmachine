@@ -5,6 +5,7 @@ beadmachine is a bead pattern creator. Convert any imagine into a suitable color
 - Cross platform
 - Uses all available cores to process the image
 - Supports gif/jpg/png as input file formats
+- Can output a HTML file with detailed info on which bead to use for each pixel
 - Color matching based on [CIEDE2000](http://en.wikipedia.org/wiki/Color_difference#CIEDE2000 "")
 - Included bead palettes: [Hama](http://www.hama.dk "")
 - Optional image resizing
@@ -15,6 +16,8 @@ beadmachine is a bead pattern creator. Convert any imagine into a suitable color
   <dd>Filename of image to process.</dd>
 <dt>-o=FILENAME.png</dt>
   <dd>Output filename for the converted PNG image.</dd>
+<dt>-l=pattern.html</dt>
+  <dd>Output filename for a HTML based bead pattern.</dd>
 <dt>-p=colors_hama.json</dt>
   <dd>Filename of the bead palette.</dd>
 <dt>-w=0</dt>
@@ -31,7 +34,7 @@ beadmachine is a bead pattern creator. Convert any imagine into a suitable color
 To convert the sample yoshi image to Hama bead colors:
 
 ```bash
-./beadmachine -i examples/yoshi_thinking_in.png -o out.png
+./beadmachine -i examples/yoshi_thinking_in.png -o out.png -l=pattern.html
 ```
 
 <img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/yoshi_thinking_in.png" alt="Yoshi thinking in" height="96" width="84"/> -> <img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/yoshi_thinking_out.png" alt="Yoshi thinking out" height="96" width="84"/>
@@ -52,6 +55,10 @@ Beads used 'H18 Black': 179
 Beads used 'H42 Flourescent green': 38
 Image processed in 4.0003ms
 ```
+
+The output of the HTML pattern file will look like this:
+
+<img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/yoshi_thinking_htmlpattern.png" alt="Yoshi HTML pattern"/>
 
 To convert the sample Mona Lisa image to Hama bead colors, resize to a width of 58 pixel and create a bead style output:
 
@@ -86,7 +93,6 @@ go build
 ```
 
 ### Todo
-- Export a text based beadable pattern
 - Perler palette
 - Support for giving bead stocks as input
 - GUI
