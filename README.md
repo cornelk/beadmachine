@@ -3,7 +3,7 @@ beadmachine is a bead pattern creator. Convert any imagine into a suitable color
 
 ### Features
 - Cross platform
-- Uses all available cores to process the image
+- Uses all available CPU cores to process the image
 - Supports gif/jpg/png as input file formats
 - Can output a HTML file with detailed info on which bead to use for each pixel
 - Color matching based on [CIEDE2000](http://en.wikipedia.org/wiki/Color_difference#CIEDE2000 "")
@@ -24,17 +24,25 @@ beadmachine is a bead pattern creator. Convert any imagine into a suitable color
   <dd>Resize image to width.</dd>
 <dt>-h=0</dt>
   <dd>Resize image to height.</dd>
+<dt>-x=1</dt>
+  <dd>Resize image to width in amount of boards.</dd>
+<dt>-y=1</dt>
+  <dd>Resize image to height in amount of boards.</dd>
 <dt>-g</dt>
   <dd>Convert the image to greyscale.</dd>
 <dt>-b</dt>
   <dd>Make output file look like a beads board.</dd>
+<dt>-t</dt>
+  <dd>Include translucent colors for the conversion.</dd>
+<dt>-f</dt>
+  <dd>Include flourescent colors for the conversion.</dd>
 </dl>
 
 ### Example Usage
 To convert the sample yoshi image to Hama bead colors:
 
 ```bash
-./beadmachine -i examples/yoshi_thinking_in.png -o out.png -l=pattern.html
+./beadmachine -i examples/yoshi_thinking_in.png -o out.png -l pattern.html
 ```
 
 <img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/yoshi_thinking_in.png" alt="Yoshi thinking in" height="96" width="84"/> -> <img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/yoshi_thinking_out.png" alt="Yoshi thinking out" height="96" width="84"/>
@@ -42,18 +50,19 @@ To convert the sample yoshi image to Hama bead colors:
 And will print out a statistic:
 ```bash
 Input image width: 28 height: 32
-...
+Bead boards width: 1 height: 1
+Beads width: 14 cm, height: 16 cm
 Bead colors used: 9
-Beads used 'H47 Pastel Green': 72
-Beads used 'H38 Neon orange': 18
-Beads used 'H4 Orange': 10
+Beads used 'H37 Neon green': 38
 Beads used 'H10 Green': 30
-Beads used 'H35 Neon red': 13
+Beads used 'H47 Pastel Green': 72
+Beads used 'H4 Orange': 10
 Beads used 'H27 Beige': 11
-Beads used 'H1 White': 525
 Beads used 'H18 Black': 179
-Beads used 'H42 Flourescent green': 38
-Image processed in 4.0003ms
+Beads used 'H38 Neon orange': 18
+Beads used 'H35 Neon red': 13
+Beads used 'H1 White': 525
+Image processed in 8.0005ms
 ```
 
 The output of the HTML pattern file will look like this:
@@ -73,26 +82,22 @@ And will print out a statistic:
 Input image width: 722 height: 1074
 Beads width: 58 height: 86
 Bead boards width: 2 height: 3
-Output image width: 464 height: 688
-Bead colors used: 19
+Output image pixel width: 58 height: 86
+Beads width: 29 cm, height: 43 cm
+Bead colors used: 18
 ...
 ```
 
 ### Installation
-You need to have a [Golang](http://golang.org/doc/install "") environment set up. Download beadmachine:
+You need to have a [Golang](http://golang.org/doc/install "") environment set up. Install beadmachine:
 
 ```bash
-go get github.com/CornelK/beadmachine
-```
-
-Change to the directory inside your GOPATH and build the application:
-
-```bash
-cd $GOPATH/src/github.com/CornelK/beatmachine
-go build
+go install github.com/CornelK/beadmachine
 ```
 
 ### Todo
+- Draw board border in HTML pattern
+- Filter support like Blur
 - Perler palette
 - Support for giving bead stocks as input
-- GUI
+- GUI / Webservice

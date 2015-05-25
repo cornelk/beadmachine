@@ -63,22 +63,26 @@
   "H13 Translucent Red": {
     "r": 168,
     "g": 18,
-    "b": 30
+    "b": 30,
+    "Translucent": true
   },
   "H14 Translucent Yellow": {
     "r": 233,
     "g": 201,
-    "b": 18
+    "b": 18,
+    "Translucent": true
   },
   "H15 Translucent Blue": {
     "r": 2,
     "g": 137,
-    "b": 201
+    "b": 201,
+    "Translucent": true
   },
   "H16 Translucent Green": {
     "r": 102,
     "g": 171,
-    "b": 126
+    "b": 126,
+    "Translucent": true
   },
   "H17 Grey": {
     "r": 128,
@@ -111,17 +115,20 @@
     "r": 50,
     "g": 50,
     "b": 50,
-    "GreyShade": true
+    "GreyShade": true,
+    "Translucent": true
   },
   "H24 Translucent Purple": {
     "r": 104,
     "g": 90,
-    "b": 141
+    "b": 141,
+    "Translucent": true
   },
   "H25 Translucent Brown": {
     "r": 152,
     "g": 120,
-    "b": 79
+    "b": 79,
+    "Translucent": true
   },
   "H26 Flesh": {
     "r": 225,
@@ -161,7 +168,8 @@
   "H33 Flourescent Cerise": {
     "r": 190,
     "g": 24,
-    "b": 48
+    "b": 48,
+    "Flourescent": true
   },
   "H34 Neon yellow": {
     "r": 226,
@@ -191,22 +199,26 @@
   "H39 Flourescent yellow": {
     "r": 229,
     "g": 224,
-    "b": 81
+    "b": 81,
+    "Flourescent": true
   },
   "H40 Flourescent orange": {
     "r": 201,
     "g": 68,
-    "b": 23
+    "b": 23,
+    "Flourescent": true
   },
   "H41 Flourescent blue": {
     "r": 70,
     "g": 154,
-    "b": 216
+    "b": 216,
+    "Flourescent": true
   },
   "H42 Flourescent green": { 
     "r": 123,
     "g": 176,
-    "b": 68
+    "b": 68,
+    "Flourescent": true
   },
   "H43 Pastel Yellow": {
     "r": 241,

@@ -31,19 +31,26 @@ type RGB struct {
 
 // BeadConfig configures a bead color
 type BeadConfig struct {
-	R, G, B   uint8
-	GreyShade bool
+	R, G, B     uint8
+	GreyShade   bool
+	Translucent bool
+	Flourescent bool
 }
 
 var (
 	inputFileName   = kingpin.Flag("input", "Filename of image to process.").Short('i').Required().String()
 	outputFileName  = kingpin.Flag("output", "Output filename for the converted PNG image.").Short('o').PlaceHolder("OUTPUT.png").Required().String()
-	htmlFileName    = kingpin.Flag("html", "Output filename for a HTML based bead pattern file.").Short('l').Default("pattern.html").String()
+	htmlFileName    = kingpin.Flag("html", "Output filename for a HTML based bead pattern file.").Short('l').String()
 	paletteFileName = kingpin.Flag("palette", "Filename of the bead palette.").Short('p').Default("colors_hama.json").String()
-	newWidth        = kingpin.Flag("width", "Resize image to width.").Short('w').Default("0").Int()
-	newHeight       = kingpin.Flag("height", "Resize image to height.").Short('h').Default("0").Int()
+	newWidth        = kingpin.Flag("width", "Resize image to width in pixel.").Short('w').Default("0").Int()
+	newHeight       = kingpin.Flag("height", "Resize image to height in pixel.").Short('h').Default("0").Int()
+	newWidthBoards  = kingpin.Flag("boardswidth", "Resize image to width in amount of boards.").Short('x').Default("0").Int()
+	newHeightBoards = kingpin.Flag("boardsheight", "Resize image to height in amount of boards.").Short('y').Default("0").Int()
+	boardDimension  = kingpin.Flag("boarddimension", "Dimension of a board.").Short('d').Default("29").Int()
 	beadStyle       = kingpin.Flag("bead", "Make output file look like a beads board.").Short('b').Bool()
 	greyScale       = kingpin.Flag("grey", "Convert the image to greyscale.").Short('g').Bool()
+	useTranslucent  = kingpin.Flag("translucent", "Include translucent colors for the conversion.").Short('t').Bool()
+	useFlourescent  = kingpin.Flag("flourescent", "Include flourescent colors for the conversion.").Short('f').Bool()
 
 	targetIlluminant = &chromath.IlluminantRefD50
 	labTransformer   = chromath.NewLabTransformer(targetIlluminant)
@@ -73,6 +80,12 @@ func LoadPalette(fileName string) (map[string]BeadConfig, map[chromath.Lab]strin
 	cfgLab := make(map[chromath.Lab]string)
 	for beadName, rgbOriginal := range cfg {
 		if *greyScale == true && rgbOriginal.GreyShade == false { // only process grey shades in greyscale mode
+			continue
+		}
+		if *useTranslucent == false && rgbOriginal.Translucent == true { // only process translucent in translucent mode
+			continue
+		}
+		if *useFlourescent == false && rgbOriginal.Flourescent == true { // only process flourescent in flourescent mode
 			continue
 		}
 
@@ -215,6 +228,12 @@ func main() {
 		inputImage = imaging.Grayscale(inputImage)
 	}
 
+	if *newWidthBoards > 0 {
+		*newWidth = *newWidthBoards * *boardDimension
+	}
+	if *newHeightBoards > 0 {
+		*newHeight = *newHeightBoards * *boardDimension
+	}
 	resized := false
 	if *newWidth > 0 || *newHeight > 0 {
 		inputImage = imaging.Resize(inputImage, *newWidth, *newHeight, imaging.Lanczos)
@@ -236,7 +255,7 @@ func main() {
 	if resized || *beadStyle {
 		fmt.Println("Output image pixel width:", outputImageBounds.Dx(), "height:", outputImageBounds.Dy())
 	}
-	fmt.Printf("Output image width: %v cm, height: %v cm\n", float64(outputImageBounds.Dx())*0.5, float64(outputImageBounds.Dy())*0.5)
+	fmt.Printf("Beads width: %v cm, height: %v cm\n", float64(outputImageBounds.Dx())*0.5, float64(outputImageBounds.Dy())*0.5)
 	outputImage := image.NewRGBA(outputImageBounds)
 
 	beadUsageChan := make(chan string, pixelCount)
