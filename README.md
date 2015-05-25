@@ -53,16 +53,16 @@ Input image width: 28 height: 32
 Bead boards width: 1 height: 1
 Beads width: 14 cm, height: 16 cm
 Bead colors used: 9
+Beads used 'H1 White': 525
 Beads used 'H37 Neon green': 38
-Beads used 'H10 Green': 30
 Beads used 'H47 Pastel Green': 72
+Beads used 'H38 Neon orange': 18
 Beads used 'H4 Orange': 10
 Beads used 'H27 Beige': 11
 Beads used 'H18 Black': 179
-Beads used 'H38 Neon orange': 18
+Beads used 'H10 Green': 30
 Beads used 'H35 Neon red': 13
-Beads used 'H1 White': 525
-Image processed in 8.0005ms
+Image processed in 3.0001ms
 ```
 
 The output of the HTML pattern file will look like this:
@@ -80,7 +80,6 @@ To convert the sample Mona Lisa image to Hama bead colors, resize to a width of 
 And will print out a statistic:
 ```bash
 Input image width: 722 height: 1074
-Beads width: 58 height: 86
 Bead boards width: 2 height: 3
 Output image pixel width: 58 height: 86
 Beads width: 29 cm, height: 43 cm
@@ -96,6 +95,8 @@ go install github.com/CornelK/beadmachine
 ```
 
 ### Todo
+- Option to skip color matching
+- Specify different width and height for board dimension
 - Draw board border in HTML pattern
 - Filter support like Blur
 - Perler palette

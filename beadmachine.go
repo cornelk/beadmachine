@@ -224,11 +224,11 @@ func main() {
 	imageBounds := inputImage.Bounds()
 	fmt.Println("Input image width:", imageBounds.Dx(), "height:", imageBounds.Dy())
 
-	if *greyScale { // better looking results when doing before a possible resize
+	if *greyScale { // better looking results when doing greyscaling before resizing
 		inputImage = imaging.Grayscale(inputImage)
 	}
 
-	if *newWidthBoards > 0 {
+	if *newWidthBoards > 0 { // a given boards number overrides a possible given pixel number
 		*newWidth = *newWidthBoards * *boardDimension
 	}
 	if *newHeightBoards > 0 {
@@ -243,25 +243,25 @@ func main() {
 	pixelCount := imageBounds.Dx() * imageBounds.Dy()
 
 	outputImageBounds := imageBounds
-	if resized || *beadStyle {
-		fmt.Println("Beads width:", outputImageBounds.Dx(), "height:", outputImageBounds.Dy())
-	}
 	fmt.Println("Bead boards width:", calculateBeadBoardsNeeded(outputImageBounds.Dx()), "height:", calculateBeadBoardsNeeded(outputImageBounds.Dy()))
-
 	if *beadStyle { // each pixel will be a bead of 8x8 pixel
 		outputImageBounds.Max.X *= 8
 		outputImageBounds.Max.Y *= 8
 	}
 	if resized || *beadStyle {
-		fmt.Println("Output image pixel width:", outputImageBounds.Dx(), "height:", outputImageBounds.Dy())
+		fmt.Println("Output image pixel width:", imageBounds.Dx(), "height:", imageBounds.Dy())
 	}
-	fmt.Printf("Beads width: %v cm, height: %v cm\n", float64(outputImageBounds.Dx())*0.5, float64(outputImageBounds.Dy())*0.5)
+	fmt.Printf("Beads width: %v cm, height: %v cm\n", float64(imageBounds.Dx())*0.5, float64(imageBounds.Dy())*0.5)
 	outputImage := image.NewRGBA(outputImageBounds)
 
 	beadUsageChan := make(chan string, pixelCount)
 	workQueueChan := make(chan image.Point, cpuCount*2)
 	workDone := make(chan struct{})
-	outputImageBeadNames := make([]string, pixelCount)
+
+	var outputImageBeadNames []string
+	if len(*htmlFileName) > 0 {
+		outputImageBeadNames = make([]string, pixelCount)
+	}
 
 	var pixelWaitGroup sync.WaitGroup
 	pixelWaitGroup.Add(pixelCount)
@@ -281,7 +281,10 @@ func main() {
 						colorMatchCacheLock.Unlock()
 					}
 
-					outputImageBeadNames[pixel.X+pixel.Y*outputImageBounds.Max.X] = beadName
+					if len(*htmlFileName) > 0 {
+						outputImageBeadNames[pixel.X+pixel.Y*imageBounds.Max.X] = beadName
+					}
+
 					matchRgb := beadConfig[beadName]
 					setOutputImagePixel(outputImage, pixel, matchRgb)
 				}(pixel)
