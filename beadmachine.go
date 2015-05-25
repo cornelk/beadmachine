@@ -21,7 +21,7 @@ import (
 	"github.com/disintegration/imaging"
 	chromath "github.com/jkl1337/go-chromath"
 	"github.com/jkl1337/go-chromath/deltae"
-	kingpin "gopkg.in/alecthomas/kingpin.v1"
+	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
 // RGB is a simple RGB struct to define a color
@@ -38,25 +38,39 @@ type BeadConfig struct {
 }
 
 var (
+	// files
 	inputFileName   = kingpin.Flag("input", "Filename of image to process.").Short('i').Required().String()
 	outputFileName  = kingpin.Flag("output", "Output filename for the converted PNG image.").Short('o').PlaceHolder("OUTPUT.png").Required().String()
 	htmlFileName    = kingpin.Flag("html", "Output filename for a HTML based bead pattern file.").Short('l').String()
 	paletteFileName = kingpin.Flag("palette", "Filename of the bead palette.").Short('p').Default("colors_hama.json").String()
+
+	// dimensions
 	newWidth        = kingpin.Flag("width", "Resize image to width in pixel.").Short('w').Default("0").Int()
 	newHeight       = kingpin.Flag("height", "Resize image to height in pixel.").Short('h').Default("0").Int()
 	newWidthBoards  = kingpin.Flag("boardswidth", "Resize image to width in amount of boards.").Short('x').Default("0").Int()
 	newHeightBoards = kingpin.Flag("boardsheight", "Resize image to height in amount of boards.").Short('y').Default("0").Int()
 	boardDimension  = kingpin.Flag("boarddimension", "Dimension of a board.").Short('d').Default("29").Int()
-	beadStyle       = kingpin.Flag("bead", "Make output file look like a beads board.").Short('b').Bool()
-	greyScale       = kingpin.Flag("grey", "Convert the image to greyscale.").Short('g').Bool()
-	useTranslucent  = kingpin.Flag("translucent", "Include translucent colors for the conversion.").Short('t').Bool()
-	useFlourescent  = kingpin.Flag("flourescent", "Include flourescent colors for the conversion.").Short('f').Bool()
 
+	// bead types
+	beadStyle      = kingpin.Flag("bead", "Make output file look like a beads board.").Short('b').Bool()
+	useTranslucent = kingpin.Flag("translucent", "Include translucent colors for the conversion.").Short('t').Bool()
+	useFlourescent = kingpin.Flag("flourescent", "Include flourescent colors for the conversion.").Short('f').Bool()
+
+	// filters
+	greyScale        = kingpin.Flag("grey", "Convert the image to greyscale.").Bool()
+	filterBlur       = kingpin.Flag("blur", "Apply blur filter (0.0 - 10.0).").Float()
+	filterSharpen    = kingpin.Flag("sharpen", "Apply sharpen filter (0.0 - 10.0).").Float()
+	filterGamma      = kingpin.Flag("gamma", "Apply gamma correction (0.0 - 10.0).").Float()
+	filterContrast   = kingpin.Flag("contrast", "Apply contrast adjustment (-100 - 100).").Float()
+	filterBrightness = kingpin.Flag("brightness", "Apply brightness adjustment (-100 - 100).").Float()
+
+	// color conversion variables
 	targetIlluminant = &chromath.IlluminantRefD50
 	labTransformer   = chromath.NewLabTransformer(targetIlluminant)
 	rgbTransformer   = chromath.NewRGBTransformer(&chromath.SpaceSRGB, &chromath.AdaptationBradford, targetIlluminant, &chromath.Scaler8bClamping, 1.0, nil)
 	beadFillPixel    = color.RGBA{225, 225, 225, 255} // light grey
 
+	// conversion synchronisation variables
 	colorMatchCache     = make(map[color.Color]string)
 	colorMatchCacheLock sync.RWMutex
 	beadStatsDone       = make(chan struct{})
@@ -201,7 +215,32 @@ func writeHTMLBeadInstructionFile(fileName string, outputImageBounds image.Recta
 	w.WriteString("</table>\n</body>\n</html>\n")
 	w.Flush()
 	htmlFile.Close()
+}
 
+// applyfilters will apply all filters that were enabled to the input image
+func applyFilters(inputImage image.Image) image.Image {
+	filteredImage := inputImage
+
+	if *greyScale {
+		filteredImage = imaging.Grayscale(filteredImage)
+	}
+	if *filterBlur != 0.0 {
+		filteredImage = imaging.Blur(filteredImage, *filterBlur)
+	}
+	if *filterSharpen != 0.0 {
+		filteredImage = imaging.Sharpen(filteredImage, *filterSharpen)
+	}
+	if *filterGamma != 0.0 {
+		filteredImage = imaging.AdjustGamma(filteredImage, *filterGamma)
+	}
+	if *filterContrast != 0.0 {
+		filteredImage = imaging.AdjustContrast(filteredImage, *filterContrast)
+	}
+	if *filterBrightness != 0.0 {
+		filteredImage = imaging.AdjustBrightness(filteredImage, *filterBrightness)
+	}
+
+	return filteredImage
 }
 
 func main() {
@@ -224,9 +263,7 @@ func main() {
 	imageBounds := inputImage.Bounds()
 	fmt.Println("Input image width:", imageBounds.Dx(), "height:", imageBounds.Dy())
 
-	if *greyScale { // better looking results when doing greyscaling before resizing
-		inputImage = imaging.Grayscale(inputImage)
-	}
+	inputImage = applyFilters(inputImage) // apply filters before resizing for better results
 
 	if *newWidthBoards > 0 { // a given boards number overrides a possible given pixel number
 		*newWidth = *newWidthBoards * *boardDimension

@@ -9,6 +9,7 @@ beadmachine is a bead pattern creator. Convert any imagine into a suitable color
 - Color matching based on [CIEDE2000](http://en.wikipedia.org/wiki/Color_difference#CIEDE2000 "")
 - Included bead palettes: [Hama](http://www.hama.dk "")
 - Optional image resizing
+- Image filters to preprocess the input image
 
 ### Command-line options:
 <dl>
@@ -28,14 +29,24 @@ beadmachine is a bead pattern creator. Convert any imagine into a suitable color
   <dd>Resize image to width in amount of boards.</dd>
 <dt>-y=1</dt>
   <dd>Resize image to height in amount of boards.</dd>
-<dt>-g</dt>
-  <dd>Convert the image to greyscale.</dd>
 <dt>-b</dt>
   <dd>Make output file look like a beads board.</dd>
 <dt>-t</dt>
   <dd>Include translucent colors for the conversion.</dd>
 <dt>-f</dt>
   <dd>Include flourescent colors for the conversion.</dd>
+<dt>--grey</dt>
+  <dd>Convert the image to greyscale.</dd>
+<dt>--blur=1.0</dt>
+  <dd>Apply blur filter (0.0 - 10.0).</dd>
+<dt>--sharpen=1.0</dt>
+  <dd>Apply sharpen filter (0.0 - 10.0).</dd>
+<dt>--gamma=1.0</dt>
+  <dd>Apply gamma correction (0.0 - 10.0).</dd>
+<dt>--contrast=1.0</dt>
+  <dd>Apply contrast adjustment (-100 - 100).</dd>
+<dt>--brightness=1.0</dt>
+  <dd>Apply brightness adjustment (-100 - 100).</dd>
 </dl>
 
 ### Example Usage
@@ -72,7 +83,7 @@ The output of the HTML pattern file will look like this:
 To convert the sample Mona Lisa image to Hama bead colors, resize to a width of 58 pixel and create a bead style output:
 
 ```bash
-./beadmachine -i examples/mona_lisa_color_restoration_in.jpg -o out.png -w 58 -b
+./beadmachine -i examples/mona_lisa_color_restoration_in.jpg -o out.png -w 58 -b -b --blur 2.75 --contrast 10
 ```
 
 <img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/mona_lisa_color_restoration_in.jpg" alt="Mona Lisa in" height="461" width="310"/> -> <img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/mona_lisa_color_restoration_out.png" alt="Mona Lisa out" height="461" width="310"/>
@@ -98,7 +109,6 @@ go install github.com/CornelK/beadmachine
 - Option to skip color matching
 - Specify different width and height for board dimension
 - Draw board border in HTML pattern
-- Filter support like Blur
-- Perler palette
+- Perler bead palette
 - Support for giving bead stocks as input
 - GUI / Webservice
