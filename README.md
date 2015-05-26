@@ -107,8 +107,8 @@ go install github.com/CornelK/beadmachine
 
 ### Todo
 - Option to skip color matching
+- Mouse over hints in HTML pattern file for multiple same colored beads counts
 - Specify different width and height for board dimension
-- Draw board border in HTML pattern
 - Perler bead palette
 - Support for giving bead stocks as input
 - GUI / Webservice

@@ -192,22 +192,59 @@ func writeHTMLBeadInstructionFile(fileName string, outputImageBounds image.Recta
 	}
 
 	w := bufio.NewWriter(htmlFile)
-	w.WriteString("<html>\n<body>\n<table>\n")
+	w.WriteString("<html>\n<head>\n")
+	w.WriteString("<style type=\"text/css\">\n")
+	w.WriteString(".lb { border-left: 2px solid black !important; }\n")
+	w.WriteString(".rb { border-right: 2px solid black !important; }\n")
+	w.WriteString(".tb td { border-top: 2px solid black !important; }\n")
+	w.WriteString(".bb td { border-bottom: 2px solid black !important; }\n")
+	w.WriteString("</style>\n</head>\n<body>\n")
+	w.WriteString("<table style=\"border-spacing: 0px;\">\n")
 
 	for y := outputImageBounds.Min.Y; y < outputImageBounds.Max.Y; y++ {
-		w.WriteString("<tr>") // write a line with colored cells
+		w.WriteString("<tr")
+		if y == 0 { // // draw top bead board horizontal border
+			w.WriteString(" class=\"tb\"")
+		}
+		w.WriteString(">")
+
+		// write a line with colored cells
 		for x := outputImageBounds.Min.X; x < outputImageBounds.Max.X; x++ {
 			pixel := outputImage.RGBAAt(x, y)
 			colorstring := fmt.Sprintf("#%02X%02X%02X", pixel.R, pixel.G, pixel.B)
-			w.WriteString("<td bgcolor=\"" + colorstring + "\">&nbsp;</td>")
+
+			w.WriteString("<td bgcolor=\"" + colorstring + "\"")
+			if x == 0 {
+				w.WriteString(" class=\"lb\"") // draw left bead board vertical border
+			} else {
+				if (x+1)%*boardDimension == 0 { // draw bead board vertical border
+					w.WriteString(" class=\"rb\"")
+				}
+			}
+			w.WriteString(">&nbsp;</td>")
 		}
 		w.WriteString("</tr>\n")
 
-		w.WriteString("<tr>") // write a line with bead names
+		w.WriteString("<tr")
+		if y > 0 && (y+1)%*boardDimension == 0 { // draw bead board horizontal border
+			w.WriteString(" class=\"bb\"")
+		}
+		w.WriteString(">")
+
+		// write a line with bead names
 		for x := outputImageBounds.Min.X; x < outputImageBounds.Max.X; x++ {
 			beadName := outputImageBeadNames[x+y*outputImageBounds.Max.X]
 			shortName := strings.Split(beadName, " ")
-			w.WriteString("<td>" + shortName[0] + "</td>") // only print first part of name
+
+			w.WriteString("<td")
+			if x == 0 {
+				w.WriteString(" class=\"lb\"") // draw left bead board vertical border
+			} else {
+				if (x+1)%*boardDimension == 0 { // draw bead board vertical border
+					w.WriteString(" class=\"rb\"")
+				}
+			}
+			w.WriteString(">" + shortName[0] + "</td>") // only print first part of name
 		}
 		w.WriteString("</tr>\n")
 	}
