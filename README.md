@@ -35,6 +35,8 @@ beadmachine is a bead pattern creator. Convert any imagine into a suitable color
   <dd>Include translucent colors for the conversion.</dd>
 <dt>-f</dt>
   <dd>Include flourescent colors for the conversion.</dd>
+<dt>-n</dt>
+  <dd>Skip the bead color matching.</dd>
 <dt>--grey</dt>
   <dd>Convert the image to greyscale.</dd>
 <dt>--blur=1.0</dt>
@@ -106,7 +108,6 @@ go install github.com/CornelK/beadmachine
 ```
 
 ### Todo
-- Option to skip color matching
 - Mouse over hints in HTML pattern file for multiple same colored beads counts
 - Specify different width and height for board dimension
 - Perler bead palette

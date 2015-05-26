@@ -57,6 +57,7 @@ var (
 	useFlourescent = kingpin.Flag("flourescent", "Include flourescent colors for the conversion.").Short('f').Bool()
 
 	// filters
+	noColorMatching  = kingpin.Flag("nocolormatching", "Skip the bead color matching.").Short('n').Bool()
 	greyScale        = kingpin.Flag("grey", "Convert the image to greyscale.").Bool()
 	filterBlur       = kingpin.Flag("blur", "Apply blur filter (0.0 - 10.0).").Float()
 	filterSharpen    = kingpin.Flag("sharpen", "Apply sharpen filter (0.0 - 10.0).").Float()
@@ -280,6 +281,24 @@ func applyFilters(inputImage image.Image) image.Image {
 	return filteredImage
 }
 
+// readImageFile reads and decodes the given image file
+func readImageFile(FileName string) image.Image {
+	imageReader, err := os.Open(*inputFileName)
+	if err != nil {
+		fmt.Printf("Opening input image file failed: %v\n", err)
+		os.Exit(1)
+	}
+	defer imageReader.Close()
+
+	inputImage, _, err := image.Decode(imageReader)
+	if err != nil {
+		fmt.Printf("Decoding input image file failed: %v\n", err)
+		os.Exit(1)
+	}
+
+	return inputImage
+}
+
 func main() {
 	kingpin.CommandLine.Help = "Bead pattern creator."
 	kingpin.Parse()
@@ -289,19 +308,13 @@ func main() {
 
 	beadConfig, beadLab := LoadPalette(*paletteFileName)
 
-	imageReader, err := os.Open(*inputFileName)
-	if err != nil {
-		fmt.Printf("Opening input image file failed: %v\n", err)
-		os.Exit(1)
-	}
-	defer imageReader.Close()
-
-	inputImage, _, err := image.Decode(imageReader)
+	inputImage := readImageFile(*inputFileName)
 	imageBounds := inputImage.Bounds()
 	fmt.Printf("Input image width: %v, height: %v\n", imageBounds.Dx(), imageBounds.Dy())
 
 	inputImage = applyFilters(inputImage) // apply filters before resizing for better results
 
+	// resize the image if needed
 	if *newWidthBoards > 0 { // a given boards number overrides a possible given pixel number
 		*newWidth = *newWidthBoards * *boardDimension
 	}
@@ -330,66 +343,77 @@ func main() {
 		fmt.Printf("Output image pixel width: %v, height: %v\n", imageBounds.Dx(), imageBounds.Dy())
 	}
 
-	beadUsageChan := make(chan string, pixelCount)
-	workQueueChan := make(chan image.Point, cpuCount*2)
-	workDone := make(chan struct{})
-
-	var outputImageBeadNames []string
-	if len(*htmlFileName) > 0 {
-		outputImageBeadNames = make([]string, pixelCount)
-	}
-
-	var pixelWaitGroup sync.WaitGroup
-	pixelWaitGroup.Add(pixelCount)
-
-	go func() { // pixel channel worker goroutine
-		for {
-			select {
-			case pixel := <-workQueueChan:
-				go func(pixel image.Point) { // pixel processing goroutine
-					defer pixelWaitGroup.Done()
-					oldPixel := inputImage.At(pixel.X, pixel.Y)
-					beadName, cached := FindSimilarColor(beadLab, oldPixel)
-					beadUsageChan <- beadName
-					if cached == false {
-						colorMatchCacheLock.Lock()
-						colorMatchCache[oldPixel] = beadName
-						colorMatchCacheLock.Unlock()
-					}
-
-					if len(*htmlFileName) > 0 {
-						outputImageBeadNames[pixel.X+pixel.Y*imageBounds.Max.X] = beadName
-					}
-
-					matchRgb := beadConfig[beadName]
-					setOutputImagePixel(outputImage, pixel, matchRgb)
-				}(pixel)
-			case <-workDone:
-				return
+	if *noColorMatching {
+		for y := imageBounds.Min.Y; y < imageBounds.Max.Y; y++ {
+			for x := imageBounds.Min.X; x < imageBounds.Max.X; x++ {
+				pixelColor := inputImage.At(x, y)
+				r, g, b, _ := pixelColor.RGBA()
+				pixelRGBA := color.RGBA{uint8(r), uint8(g), uint8(b), 255} // A 255 = no transparency
+				outputImage.SetRGBA(x, y, pixelRGBA)
 			}
 		}
-	}()
+	} else {
+		startTime := time.Now()
+		beadUsageChan := make(chan string, pixelCount)
+		workQueueChan := make(chan image.Point, cpuCount*2)
+		workDone := make(chan struct{})
 
-	go calculateBeadUsage(beadUsageChan)
-
-	startTime := time.Now()
-	for y := imageBounds.Min.Y; y < imageBounds.Max.Y; y++ {
-		for x := imageBounds.Min.X; x < imageBounds.Max.X; x++ {
-			workQueueChan <- image.Point{x, y}
+		var outputImageBeadNames []string
+		if len(*htmlFileName) > 0 {
+			outputImageBeadNames = make([]string, pixelCount)
 		}
-	}
 
-	pixelWaitGroup.Wait() // wait for all pixel to be processed
-	workDone <- struct{}{}
-	close(workQueueChan)
-	close(beadUsageChan)
-	<-beadStatsDone
+		var pixelWaitGroup sync.WaitGroup
+		pixelWaitGroup.Add(pixelCount)
 
-	elapsedTime := time.Since(startTime)
-	fmt.Printf("Image processed in %s\n", elapsedTime)
+		go func() { // pixel channel worker goroutine
+			for {
+				select {
+				case pixel := <-workQueueChan:
+					go func(pixel image.Point) { // pixel processing goroutine
+						defer pixelWaitGroup.Done()
+						oldPixel := inputImage.At(pixel.X, pixel.Y)
+						beadName, cached := FindSimilarColor(beadLab, oldPixel)
+						beadUsageChan <- beadName
+						if cached == false {
+							colorMatchCacheLock.Lock()
+							colorMatchCache[oldPixel] = beadName
+							colorMatchCacheLock.Unlock()
+						}
 
-	if len(*htmlFileName) > 0 {
-		writeHTMLBeadInstructionFile(*htmlFileName, imageBounds, outputImage, outputImageBeadNames)
+						if len(*htmlFileName) > 0 {
+							outputImageBeadNames[pixel.X+pixel.Y*imageBounds.Max.X] = beadName
+						}
+
+						matchRgb := beadConfig[beadName]
+						setOutputImagePixel(outputImage, pixel, matchRgb)
+					}(pixel)
+				case <-workDone:
+					return
+				}
+			}
+		}()
+
+		go calculateBeadUsage(beadUsageChan)
+
+		for y := imageBounds.Min.Y; y < imageBounds.Max.Y; y++ {
+			for x := imageBounds.Min.X; x < imageBounds.Max.X; x++ {
+				workQueueChan <- image.Point{x, y}
+			}
+		}
+
+		pixelWaitGroup.Wait() // wait for all pixel to be processed
+		workDone <- struct{}{}
+		close(workQueueChan)
+		close(beadUsageChan)
+		<-beadStatsDone
+
+		if len(*htmlFileName) > 0 {
+			writeHTMLBeadInstructionFile(*htmlFileName, imageBounds, outputImage, outputImageBeadNames)
+		}
+
+		elapsedTime := time.Since(startTime)
+		fmt.Printf("Image processed in %s\n", elapsedTime)
 	}
 
 	imageWriter, err := os.Create(*outputFileName)
