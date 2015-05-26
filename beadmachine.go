@@ -195,10 +195,12 @@ func writeHTMLBeadInstructionFile(fileName string, outputImageBounds image.Recta
 	w := bufio.NewWriter(htmlFile)
 	w.WriteString("<html>\n<head>\n")
 	w.WriteString("<style type=\"text/css\">\n")
+	w.WriteString("td { text-align: center }\n")
 	w.WriteString(".lb { border-left: 2px solid black !important; }\n")
 	w.WriteString(".rb { border-right: 2px solid black !important; }\n")
 	w.WriteString(".tb td { border-top: 2px solid black !important; }\n")
 	w.WriteString(".bb td { border-bottom: 2px solid black !important; }\n")
+	w.WriteString(".bg td:nth-child(even) { background-color: #E0E0E0; }\n")
 	w.WriteString("</style>\n</head>\n<body>\n")
 	w.WriteString("<table style=\"border-spacing: 0px;\">\n")
 
@@ -226,11 +228,11 @@ func writeHTMLBeadInstructionFile(fileName string, outputImageBounds image.Recta
 		}
 		w.WriteString("</tr>\n")
 
-		w.WriteString("<tr")
+		w.WriteString("<tr class=\"bg")
 		if y > 0 && (y+1)%*boardDimension == 0 { // draw bead board horizontal border
-			w.WriteString(" class=\"bb\"")
+			w.WriteString(" bb")
 		}
-		w.WriteString(">")
+		w.WriteString("\">")
 
 		// write a line with bead names
 		for x := outputImageBounds.Min.X; x < outputImageBounds.Max.X; x++ {
@@ -245,7 +247,7 @@ func writeHTMLBeadInstructionFile(fileName string, outputImageBounds image.Recta
 					w.WriteString(" class=\"rb\"")
 				}
 			}
-			w.WriteString(">" + shortName[0] + "</td>") // only print first part of name
+			w.WriteString(">&nbsp;" + shortName[0] + "&nbsp;</td>") // only print first part of name
 		}
 		w.WriteString("</tr>\n")
 	}
