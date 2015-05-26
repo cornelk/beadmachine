@@ -60,20 +60,20 @@ To convert the sample yoshi image to Hama bead colors:
 
 And will print out a statistic:
 ```bash
-Input image width: 28 height: 32
-Bead boards width: 1 height: 1
+Input image width: 28, height: 32
+Bead boards width: 1, height: 1
 Beads width: 14 cm, height: 16 cm
 Bead colors used: 9
+Beads used 'H10 Green': 30
+Beads used 'H47 Pastel Green': 72
 Beads used 'H1 White': 525
 Beads used 'H37 Neon green': 38
-Beads used 'H47 Pastel Green': 72
 Beads used 'H38 Neon orange': 18
 Beads used 'H4 Orange': 10
+Beads used 'H35 Neon red': 13
 Beads used 'H27 Beige': 11
 Beads used 'H18 Black': 179
-Beads used 'H10 Green': 30
-Beads used 'H35 Neon red': 13
-Image processed in 3.0001ms
+Image processed in 6.0004ms
 ```
 
 The output of the HTML pattern file will look like this:
@@ -83,18 +83,18 @@ The output of the HTML pattern file will look like this:
 To convert the sample Mona Lisa image to Hama bead colors, resize to a width of 58 pixel and create a bead style output:
 
 ```bash
-./beadmachine -i examples/mona_lisa_color_restoration_in.jpg -o out.png -w 58 -b -b --blur 2.75 --contrast 10
+./beadmachine -i examples/mona_lisa_in.jpg -o out.png -w 58 -b --blur 2.75 --contrast 10
 ```
 
-<img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/mona_lisa_color_restoration_in.jpg" alt="Mona Lisa in" height="461" width="310"/> -> <img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/mona_lisa_color_restoration_out.png" alt="Mona Lisa out" height="461" width="310"/>
+<img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/mona_lisa_in.jpg" alt="Mona Lisa in" height="461" width="310"/> -> <img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/mona_lisa_out.png" alt="Mona Lisa out" height="461" width="310"/>
 
 And will print out a statistic:
 ```bash
-Input image width: 722 height: 1074
-Bead boards width: 2 height: 3
-Output image pixel width: 58 height: 86
+Input image width: 722, height: 1074
+Bead boards width: 2, height: 3
 Beads width: 29 cm, height: 43 cm
-Bead colors used: 18
+Output image pixel width: 58, height: 86
+Bead colors used: 22
 ...
 ```
 

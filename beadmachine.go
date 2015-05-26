@@ -107,7 +107,7 @@ func LoadPalette(fileName string) (map[string]BeadConfig, map[chromath.Lab]strin
 		xyz := rgbTransformer.Convert(rgb)
 		lab := labTransformer.Invert(xyz)
 		cfgLab[lab] = beadName
-		//fmt.Println("Loaded bead:", beadName, "RGB:", rgb, "Lab:", lab)
+		//fmt.Printf("Loaded bead: '%v', RGB: %v, Lab: %v\n", beadName, rgb, lab)
 	}
 
 	return cfg, cfgLab
@@ -136,10 +136,10 @@ func FindSimilarColor(cfgLab map[chromath.Lab]string, pixel color.Color) (string
 			minDistance = distance
 			bestBeadMatch = beadName
 		}
-		//fmt.Println("Match:", beadName, "with distance:", distance)
+		//fmt.Printf("Match: %v with distance: %v\n", beadName, distance)
 	}
 
-	//fmt.Println("Best match:", bestBeadMatch, "with distance:", minDistance)
+	//fmt.Printf("Best match: %v with distance: %v\n", bestBeadMatch, minDistance)
 	return bestBeadMatch, false
 }
 
@@ -298,7 +298,7 @@ func main() {
 
 	inputImage, _, err := image.Decode(imageReader)
 	imageBounds := inputImage.Bounds()
-	fmt.Println("Input image width:", imageBounds.Dx(), "height:", imageBounds.Dy())
+	fmt.Printf("Input image width: %v, height: %v\n", imageBounds.Dx(), imageBounds.Dy())
 
 	inputImage = applyFilters(inputImage) // apply filters before resizing for better results
 
@@ -316,17 +316,19 @@ func main() {
 	}
 	pixelCount := imageBounds.Dx() * imageBounds.Dy()
 
-	outputImageBounds := imageBounds
-	fmt.Println("Bead boards width:", calculateBeadBoardsNeeded(outputImageBounds.Dx()), "height:", calculateBeadBoardsNeeded(outputImageBounds.Dy()))
-	if *beadStyle { // each pixel will be a bead of 8x8 pixel
-		outputImageBounds.Max.X *= 8
-		outputImageBounds.Max.Y *= 8
-	}
-	if resized || *beadStyle {
-		fmt.Println("Output image pixel width:", imageBounds.Dx(), "height:", imageBounds.Dy())
-	}
+	fmt.Printf("Bead boards width: %v, height: %v\n", calculateBeadBoardsNeeded(imageBounds.Dx()), calculateBeadBoardsNeeded(imageBounds.Dy()))
 	fmt.Printf("Beads width: %v cm, height: %v cm\n", float64(imageBounds.Dx())*0.5, float64(imageBounds.Dy())*0.5)
-	outputImage := image.NewRGBA(outputImageBounds)
+
+	beadModeImageBounds := imageBounds
+	if *beadStyle { // each pixel will be a bead of 8x8 pixel
+		beadModeImageBounds.Max.X *= 8
+		beadModeImageBounds.Max.Y *= 8
+	}
+	outputImage := image.NewRGBA(beadModeImageBounds)
+
+	if resized || *beadStyle {
+		fmt.Printf("Output image pixel width: %v, height: %v\n", imageBounds.Dx(), imageBounds.Dy())
+	}
 
 	beadUsageChan := make(chan string, pixelCount)
 	workQueueChan := make(chan image.Point, cpuCount*2)
@@ -387,7 +389,7 @@ func main() {
 	fmt.Printf("Image processed in %s\n", elapsedTime)
 
 	if len(*htmlFileName) > 0 {
-		writeHTMLBeadInstructionFile(*htmlFileName, outputImageBounds, outputImage, outputImageBeadNames)
+		writeHTMLBeadInstructionFile(*htmlFileName, imageBounds, outputImage, outputImageBeadNames)
 	}
 
 	imageWriter, err := os.Create(*outputFileName)
