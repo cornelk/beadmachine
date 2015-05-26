@@ -74,6 +74,8 @@ var (
 	// conversion synchronisation variables
 	colorMatchCache     = make(map[color.Color]string)
 	colorMatchCacheLock sync.RWMutex
+	rgbLabCache         = make(map[color.Color]chromath.Lab)
+	rgbLabCacheLock     sync.RWMutex
 	beadStatsDone       = make(chan struct{})
 )
 
@@ -115,25 +117,32 @@ func LoadPalette(fileName string) (map[string]BeadConfig, map[chromath.Lab]strin
 }
 
 // FindSimilarColor finds the most similar color from bead palette to the given pixel
-func FindSimilarColor(cfgLab map[chromath.Lab]string, pixel color.Color) (string, bool) {
+func FindSimilarColor(cfgLab map[chromath.Lab]string, pixel color.Color) string {
 	colorMatchCacheLock.RLock()
 	match, found := colorMatchCache[pixel]
 	colorMatchCacheLock.RUnlock()
 	if found {
-		return match, true
+		return match
 	}
 
-	r, g, b, _ := pixel.RGBA()
-	rgb := chromath.RGB{float64(uint8(r)), float64(uint8(g)), float64(uint8(b))}
-	xyz := rgbTransformer.Convert(rgb)
-	labPixel := labTransformer.Invert(xyz)
+	rgbLabCacheLock.RLock()
+	labPixel, found := rgbLabCache[pixel]
+	rgbLabCacheLock.RUnlock()
+	if !found {
+		r, g, b, _ := pixel.RGBA()
+		rgb := chromath.RGB{float64(uint8(r)), float64(uint8(g)), float64(uint8(b))}
+		xyz := rgbTransformer.Convert(rgb)
+		labPixel = labTransformer.Invert(xyz)
+		rgbLabCacheLock.Lock()
+		rgbLabCache[pixel] = labPixel
+		rgbLabCacheLock.Unlock()
+	}
 
-	var minDistance float64
 	var bestBeadMatch string
-
+	minDistance := -1.0 // < 0 is uninitialized marker
 	for lab, beadName := range cfgLab {
 		distance := deltae.CIE2000(lab, labPixel, &deltae.KLChDefault)
-		if len(bestBeadMatch) == 0 || distance < minDistance {
+		if minDistance < 0.0 || distance < minDistance {
 			minDistance = distance
 			bestBeadMatch = beadName
 		}
@@ -141,7 +150,10 @@ func FindSimilarColor(cfgLab map[chromath.Lab]string, pixel color.Color) (string
 	}
 
 	//fmt.Printf("Best match: %v with distance: %v\n", bestBeadMatch, minDistance)
-	return bestBeadMatch, false
+	colorMatchCacheLock.Lock()
+	colorMatchCache[pixel] = bestBeadMatch
+	colorMatchCacheLock.Unlock()
+	return bestBeadMatch
 }
 
 // calculateBeadUsage calculates the bead usage
@@ -375,13 +387,8 @@ func main() {
 					go func(pixel image.Point) { // pixel processing goroutine
 						defer pixelWaitGroup.Done()
 						oldPixel := inputImage.At(pixel.X, pixel.Y)
-						beadName, cached := FindSimilarColor(beadLab, oldPixel)
+						beadName := FindSimilarColor(beadLab, oldPixel)
 						beadUsageChan <- beadName
-						if cached == false {
-							colorMatchCacheLock.Lock()
-							colorMatchCache[oldPixel] = beadName
-							colorMatchCacheLock.Unlock()
-						}
 
 						if len(*htmlFileName) > 0 {
 							outputImageBeadNames[pixel.X+pixel.Y*imageBounds.Max.X] = beadName
