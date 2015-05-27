@@ -223,9 +223,14 @@ func writeHTMLBeadInstructionFile(fileName string, outputImageBounds image.Recta
 		}
 		w.WriteString(">")
 
+		var pixel color.RGBA
 		// write a line with colored cells
 		for x := outputImageBounds.Min.X; x < outputImageBounds.Max.X; x++ {
-			pixel := outputImage.RGBAAt(x, y)
+			if *beadStyle {
+				pixel = outputImage.RGBAAt((x*8)+1, (y*8)+1)
+			} else {
+				pixel = outputImage.RGBAAt(x, y)
+			}
 			colorstring := fmt.Sprintf("#%02X%02X%02X", pixel.R, pixel.G, pixel.B)
 
 			w.WriteString("<td bgcolor=\"" + colorstring + "\"")
@@ -372,7 +377,7 @@ func main() {
 		workQueueChan := make(chan image.Point, cpuCount*2)
 		workDone := make(chan struct{})
 
-		var outputImageBeadNames []string
+		var outputImageBeadNames []string // TODO use pointer to bead config instead of string
 		if len(*htmlFileName) > 0 {
 			outputImageBeadNames = make([]string, pixelCount)
 		}
