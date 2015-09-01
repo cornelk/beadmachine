@@ -38,6 +38,9 @@ type BeadConfig struct {
 }
 
 var (
+	// general
+	verbose = kingpin.Flag("verbose", "Enable verbose output.").Short('v').Bool()
+
 	// files
 	inputFileName   = kingpin.Flag("input", "Filename of image to process.").Short('i').Required().String()
 	outputFileName  = kingpin.Flag("output", "Output filename for the converted PNG image.").Short('o').PlaceHolder("OUTPUT.png").Required().String()
@@ -110,7 +113,9 @@ func LoadPalette(fileName string) (map[string]BeadConfig, map[chromath.Lab]strin
 		xyz := rgbTransformer.Convert(rgb)
 		lab := labTransformer.Invert(xyz)
 		cfgLab[lab] = beadName
-		//fmt.Printf("Loaded bead: '%v', RGB: %v, Lab: %v\n", beadName, rgb, lab)
+		if *verbose == true {
+			fmt.Printf("Loaded bead: '%v', RGB: %v, Lab: %v\n", beadName, rgb, lab)
+		}
 	}
 
 	return cfg, cfgLab
@@ -146,10 +151,14 @@ func FindSimilarColor(cfgLab map[chromath.Lab]string, pixel color.Color) string 
 			minDistance = distance
 			bestBeadMatch = beadName
 		}
-		//fmt.Printf("Match: %v with distance: %v\n", beadName, distance)
+		if *verbose == true {
+			fmt.Printf("Match: %v with distance: %v\n", beadName, distance)
+		}
 	}
 
-	//fmt.Printf("Best match: %v with distance: %v\n", bestBeadMatch, minDistance)
+	if *verbose == true {
+		fmt.Printf("Best match: %v with distance: %v\n", bestBeadMatch, minDistance)
+	}
 	colorMatchCacheLock.Lock()
 	colorMatchCache[pixel] = bestBeadMatch
 	colorMatchCacheLock.Unlock()
