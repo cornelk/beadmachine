@@ -37,6 +37,8 @@ beadmachine is a bead pattern creator. Convert any imagine into a suitable color
   <dd>Include flourescent colors for the conversion.</dd>
 <dt>-n</dt>
   <dd>Skip the bead color matching.</dd>
+<dt>-verbose</dt>
+  <dd>Verbose logging with details about the color matching.</dd>
 <dt>--grey</dt>
   <dd>Convert the image to greyscale.</dd>
 <dt>--blur=1.0</dt>

@@ -327,14 +327,71 @@ func readImageFile(FileName string) image.Image {
 	return inputImage
 }
 
+// processImage matches all pixel of the image to a matching bead
+func processImage(imageBounds image.Rectangle, inputImage image.Image, outputImage *image.RGBA, paletteFileNameToLoad string) {
+	beadConfig, beadLab := LoadPalette(paletteFileNameToLoad)
+
+	pixelCount := imageBounds.Dx() * imageBounds.Dy()
+	beadUsageChan := make(chan string, pixelCount)
+	workQueueChan := make(chan image.Point, runtime.NumCPU()*2)
+	workDone := make(chan struct{})
+
+	var outputImageBeadNames []string // TODO use pointer to bead config instead of string
+	if len(*htmlFileName) > 0 {
+		outputImageBeadNames = make([]string, pixelCount)
+	}
+
+	var pixelWaitGroup sync.WaitGroup
+	pixelWaitGroup.Add(pixelCount)
+
+	go func() { // pixel channel worker goroutine
+		for {
+			select {
+			case pixel := <-workQueueChan:
+				go func(pixel image.Point) { // pixel processing goroutine
+					defer pixelWaitGroup.Done()
+					oldPixel := inputImage.At(pixel.X, pixel.Y)
+					beadName := FindSimilarColor(beadLab, oldPixel)
+					beadUsageChan <- beadName
+
+					if len(*htmlFileName) > 0 {
+						outputImageBeadNames[pixel.X+pixel.Y*imageBounds.Max.X] = beadName
+					}
+
+					matchRgb := beadConfig[beadName]
+					setOutputImagePixel(outputImage, pixel, matchRgb)
+				}(pixel)
+			case <-workDone:
+				return
+			}
+		}
+	}()
+
+	go calculateBeadUsage(beadUsageChan)
+
+	for y := imageBounds.Min.Y; y < imageBounds.Max.Y; y++ {
+		for x := imageBounds.Min.X; x < imageBounds.Max.X; x++ {
+			workQueueChan <- image.Point{x, y}
+		}
+	}
+
+	pixelWaitGroup.Wait() // wait for all pixel to be processed
+	workDone <- struct{}{}
+	close(workQueueChan)
+	close(beadUsageChan)
+	<-beadStatsDone
+
+	if len(*htmlFileName) > 0 {
+		writeHTMLBeadInstructionFile(*htmlFileName, imageBounds, outputImage, outputImageBeadNames)
+	}
+}
+
 func main() {
 	kingpin.CommandLine.Help = "Bead pattern creator."
 	kingpin.Parse()
 
 	cpuCount := runtime.NumCPU()
 	runtime.GOMAXPROCS(cpuCount) // use all cores for parallelism
-
-	beadConfig, beadLab := LoadPalette(*paletteFileName)
 
 	inputImage := readImageFile(*inputFileName)
 	imageBounds := inputImage.Bounds()
@@ -355,7 +412,6 @@ func main() {
 		imageBounds = inputImage.Bounds()
 		resized = true
 	}
-	pixelCount := imageBounds.Dx() * imageBounds.Dy()
 
 	fmt.Printf("Bead boards width: %v, height: %v\n", calculateBeadBoardsNeeded(imageBounds.Dx()), calculateBeadBoardsNeeded(imageBounds.Dy()))
 	fmt.Printf("Beads width: %v cm, height: %v cm\n", float64(imageBounds.Dx())*0.5, float64(imageBounds.Dy())*0.5)
@@ -382,59 +438,7 @@ func main() {
 		}
 	} else {
 		startTime := time.Now()
-		beadUsageChan := make(chan string, pixelCount)
-		workQueueChan := make(chan image.Point, cpuCount*2)
-		workDone := make(chan struct{})
-
-		var outputImageBeadNames []string // TODO use pointer to bead config instead of string
-		if len(*htmlFileName) > 0 {
-			outputImageBeadNames = make([]string, pixelCount)
-		}
-
-		var pixelWaitGroup sync.WaitGroup
-		pixelWaitGroup.Add(pixelCount)
-
-		go func() { // pixel channel worker goroutine
-			for {
-				select {
-				case pixel := <-workQueueChan:
-					go func(pixel image.Point) { // pixel processing goroutine
-						defer pixelWaitGroup.Done()
-						oldPixel := inputImage.At(pixel.X, pixel.Y)
-						beadName := FindSimilarColor(beadLab, oldPixel)
-						beadUsageChan <- beadName
-
-						if len(*htmlFileName) > 0 {
-							outputImageBeadNames[pixel.X+pixel.Y*imageBounds.Max.X] = beadName
-						}
-
-						matchRgb := beadConfig[beadName]
-						setOutputImagePixel(outputImage, pixel, matchRgb)
-					}(pixel)
-				case <-workDone:
-					return
-				}
-			}
-		}()
-
-		go calculateBeadUsage(beadUsageChan)
-
-		for y := imageBounds.Min.Y; y < imageBounds.Max.Y; y++ {
-			for x := imageBounds.Min.X; x < imageBounds.Max.X; x++ {
-				workQueueChan <- image.Point{x, y}
-			}
-		}
-
-		pixelWaitGroup.Wait() // wait for all pixel to be processed
-		workDone <- struct{}{}
-		close(workQueueChan)
-		close(beadUsageChan)
-		<-beadStatsDone
-
-		if len(*htmlFileName) > 0 {
-			writeHTMLBeadInstructionFile(*htmlFileName, imageBounds, outputImage, outputImageBeadNames)
-		}
-
+		processImage(imageBounds, inputImage, outputImage, *paletteFileName)
 		elapsedTime := time.Since(startTime)
 		fmt.Printf("Image processed in %s\n", elapsedTime)
 	}
