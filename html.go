@@ -12,14 +12,16 @@ import (
 
 	"github.com/jkl1337/go-chromath"
 	"github.com/jkl1337/go-chromath/deltae"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
 // writeHTMLBeadInstructionFile writes a HTML file with instructions on how to make the bead based image
-func writeHTMLBeadInstructionFile(fileName string, outputImageBounds image.Rectangle, outputImage *image.RGBA, outputImageBeadNames []string) {
+func writeHTMLBeadInstructionFile(cmd *cobra.Command, fileName string, outputImageBounds image.Rectangle, outputImage *image.RGBA, outputImageBeadNames []string) error {
 	htmlFile, err := os.Create(fileName)
 	if err != nil {
-		fmt.Printf("Opening HTML output file failed: %v\n", err)
-		os.Exit(1)
+		return errors.Wrap(err, "creating HTML bead instruction file")
 	}
 
 	w := bufio.NewWriter(htmlFile)
@@ -34,6 +36,9 @@ func writeHTMLBeadInstructionFile(fileName string, outputImageBounds image.Recta
 	w.WriteString("</style>\n</head>\n<body>\n")
 	w.WriteString("<table style=\"border-spacing: 0px;\">\n")
 
+	beadStyle, _ := cmd.Flags().GetBool("beadstyle")
+	boardDimension, _ := cmd.Flags().GetInt("boarddimension")
+
 	for y := outputImageBounds.Min.Y; y < outputImageBounds.Max.Y; y++ {
 		w.WriteString("<tr")
 		if y == 0 { // // draw top bead board horizontal border
@@ -44,7 +49,7 @@ func writeHTMLBeadInstructionFile(fileName string, outputImageBounds image.Recta
 		var pixel color.RGBA
 		// write a line with colored cells
 		for x := outputImageBounds.Min.X; x < outputImageBounds.Max.X; x++ {
-			if *beadStyle {
+			if beadStyle {
 				pixel = outputImage.RGBAAt((x*8)+1, (y*8)+1)
 			} else {
 				pixel = outputImage.RGBAAt(x, y)
@@ -55,7 +60,7 @@ func writeHTMLBeadInstructionFile(fileName string, outputImageBounds image.Recta
 			if x == 0 {
 				w.WriteString(" class=\"lb\"") // draw left bead board vertical border
 			} else {
-				if (x+1)%*boardDimension == 0 { // draw bead board vertical border
+				if (x+1)%boardDimension == 0 { // draw bead board vertical border
 					w.WriteString(" class=\"rb\"")
 				}
 			}
@@ -64,7 +69,7 @@ func writeHTMLBeadInstructionFile(fileName string, outputImageBounds image.Recta
 		w.WriteString("</tr>\n")
 
 		w.WriteString("<tr class=\"bg")
-		if y > 0 && (y+1)%*boardDimension == 0 { // draw bead board horizontal border
+		if y > 0 && (y+1)%boardDimension == 0 { // draw bead board horizontal border
 			w.WriteString(" bb")
 		}
 		w.WriteString("\">")
@@ -78,7 +83,7 @@ func writeHTMLBeadInstructionFile(fileName string, outputImageBounds image.Recta
 			if x == 0 {
 				w.WriteString(" class=\"lb\"") // draw left bead board vertical border
 			} else {
-				if (x+1)%*boardDimension == 0 { // draw bead board vertical border
+				if (x+1)%boardDimension == 0 { // draw bead board vertical border
 					w.WriteString(" class=\"rb\"")
 				}
 			}
@@ -90,10 +95,11 @@ func writeHTMLBeadInstructionFile(fileName string, outputImageBounds image.Recta
 	w.WriteString("</table>\n</body>\n</html>\n")
 	w.Flush()
 	htmlFile.Close()
+	return nil
 }
 
 // FindSimilarColor finds the most similar color from bead palette to the given pixel
-func FindSimilarColor(cfgLab map[chromath.Lab]string, pixel color.Color) string {
+func FindSimilarColor(logger *zap.Logger, cfgLab map[chromath.Lab]string, pixel color.Color) string {
 	colorMatchCacheLock.RLock()
 	match, found := colorMatchCache[pixel]
 	colorMatchCacheLock.RUnlock()
@@ -122,14 +128,10 @@ func FindSimilarColor(cfgLab map[chromath.Lab]string, pixel color.Color) string 
 			minDistance = distance
 			bestBeadMatch = beadName
 		}
-		if *verbose == true {
-			fmt.Printf("Match: %v with distance: %v\n", beadName, distance)
-		}
+		logger.Debug("Matched color", zap.String("bead", beadName), zap.Float64("distance", distance))
 	}
 
-	if *verbose == true {
-		fmt.Printf("Best match: %v with distance: %v\n", bestBeadMatch, minDistance)
-	}
+	logger.Debug("Best color match", zap.String("bead", bestBeadMatch), zap.Float64("distance", minDistance))
 	colorMatchCacheLock.Lock()
 	colorMatchCache[pixel] = bestBeadMatch
 	colorMatchCacheLock.Unlock()
@@ -137,29 +139,31 @@ func FindSimilarColor(cfgLab map[chromath.Lab]string, pixel color.Color) string 
 }
 
 // LoadPalette loads a palette from a json file and returns a LAB color palette
-func LoadPalette(fileName string) (map[string]BeadConfig, map[chromath.Lab]string) {
+func LoadPalette(cmd *cobra.Command, logger *zap.Logger, fileName string) (map[string]BeadConfig, map[chromath.Lab]string, error) {
 	cfgData, err := ioutil.ReadFile(fileName)
 	if err != nil {
-		fmt.Printf("File error: %v\n", err)
-		os.Exit(1)
+		return nil, nil, errors.Wrap(err, "opening palette file")
 	}
 
 	cfg := make(map[string]BeadConfig)
 	err = json.Unmarshal(cfgData, &cfg)
 	if err != nil {
-		fmt.Printf("Config json error: %v\n", err)
-		os.Exit(1)
+		return nil, nil, errors.Wrap(err, "unmarshalling palette file")
 	}
+
+	greyScale, _ := cmd.Flags().GetBool("grey")
+	useTranslucent, _ := cmd.Flags().GetBool("translucent")
+	useFlourescent, _ := cmd.Flags().GetBool("flourescent")
 
 	cfgLab := make(map[chromath.Lab]string)
 	for beadName, rgbOriginal := range cfg {
-		if *greyScale == true && rgbOriginal.GreyShade == false { // only process grey shades in greyscale mode
+		if greyScale == true && rgbOriginal.GreyShade == false { // only process grey shades in greyscale mode
 			continue
 		}
-		if *useTranslucent == false && rgbOriginal.Translucent == true { // only process translucent in translucent mode
+		if useTranslucent == false && rgbOriginal.Translucent == true { // only process translucent in translucent mode
 			continue
 		}
-		if *useFlourescent == false && rgbOriginal.Flourescent == true { // only process flourescent in flourescent mode
+		if useFlourescent == false && rgbOriginal.Flourescent == true { // only process flourescent in flourescent mode
 			continue
 		}
 
@@ -167,10 +171,12 @@ func LoadPalette(fileName string) (map[string]BeadConfig, map[chromath.Lab]strin
 		xyz := rgbTransformer.Convert(rgb)
 		lab := labTransformer.Invert(xyz)
 		cfgLab[lab] = beadName
-		if *verbose == true {
-			fmt.Printf("Loaded bead: '%v', RGB: %v, Lab: %v\n", beadName, rgb, lab)
-		}
+		logger.Debug("Bead loaded",
+			zap.String("bead", beadName),
+			zap.Any("RGB", rgb),
+			zap.Any("Lab", lab),
+		)
 	}
 
-	return cfg, cfgLab
+	return cfg, cfgLab, nil
 }
