@@ -1,7 +1,10 @@
 # beadmachine
-beadmachine is a bead pattern creator. Convert any imagine into a suitable color palette pixel by pixel in order to be able to create a matching, beadable pattern. It also shows you a statistic about the used beads.
 
-### Features
+A bead pattern creator. Convert any imagine into a suitable color palette pixel by pixel in order to be able to create a matching, beadable pattern.
+It also shows you a statistic about the used beads.
+
+## Features
+
 - Cross platform
 - Uses all available CPU cores to process the image
 - Supports gif/jpg/png as input file formats
@@ -11,49 +14,46 @@ beadmachine is a bead pattern creator. Convert any imagine into a suitable color
 - Optional image resizing
 - Image filters to preprocess the input image
 
-### Command-line options:
-<dl>
-<dt>-i=FILENAME</dt>
-  <dd>Filename of image to process.</dd>
-<dt>-o=FILENAME.png</dt>
-  <dd>Output filename for the converted PNG image.</dd>
-<dt>-l=pattern.html</dt>
-  <dd>Output filename for a HTML based bead pattern.</dd>
-<dt>-p=colors_hama.json</dt>
-  <dd>Filename of the bead palette.</dd>
-<dt>-w=0</dt>
-  <dd>Resize image to width.</dd>
-<dt>-h=0</dt>
-  <dd>Resize image to height.</dd>
-<dt>-x=1</dt>
-  <dd>Resize image to width in amount of boards.</dd>
-<dt>-y=1</dt>
-  <dd>Resize image to height in amount of boards.</dd>
-<dt>-b</dt>
-  <dd>Make output file look like a beads board.</dd>
-<dt>-t</dt>
-  <dd>Include translucent colors for the conversion.</dd>
-<dt>-f</dt>
-  <dd>Include flourescent colors for the conversion.</dd>
-<dt>-n</dt>
-  <dd>Skip the bead color matching.</dd>
-<dt>-verbose</dt>
-  <dd>Verbose logging with details about the color matching.</dd>
-<dt>--grey</dt>
-  <dd>Convert the image to greyscale.</dd>
-<dt>--blur=1.0</dt>
-  <dd>Apply blur filter (0.0 - 10.0).</dd>
-<dt>--sharpen=1.0</dt>
-  <dd>Apply sharpen filter (0.0 - 10.0).</dd>
-<dt>--gamma=1.0</dt>
-  <dd>Apply gamma correction (0.0 - 10.0).</dd>
-<dt>--contrast=1.0</dt>
-  <dd>Apply contrast adjustment (-100 - 100).</dd>
-<dt>--brightness=1.0</dt>
-  <dd>Apply brightness adjustment (-100 - 100).</dd>
-</dl>
+## Installation
 
-### Example Usage
+You need to have Golang installed, otherwise follow the guide at [https://golang.org/doc/install](https://golang.org/doc/install).
+
+```
+go get github.com/cornelk/beadmachine
+```
+
+## Command-line options:
+```
+Bead pattern creator
+
+Usage:
+  beadmachine file.jpg [flags]
+
+Flags:
+  -b, --beadstyle            make output file look like a beads board
+      --blur float           apply blur filter (0.0 - 10.0)
+  -d, --boarddimension int   dimension of a board (default 20)
+  -y, --boardsheight int     resize image to height in amount of boards
+  -x, --boardswidth int      resize image to width in amount of boards
+      --brightness float     apply brightness adjustment (-100 - 100)
+      --contrast float       apply contrast adjustment (-100 - 100)
+  -f, --flourescent          include flourescent colors for the conversion
+      --gamma float          apply gamma correction (0.0 - 10.0)
+  -g, --grey                 convert the image to greyscale
+  -e, --height int           resize image to height in pixel
+  -h, --help                 help for beadmachine
+  -l, --html string          output filename for a HTML based bead pattern file
+  -i, --input string         image to process
+  -n, --nocolormatching      skip the bead color matching
+  -o, --output string        output filename for the converted PNG image
+  -p, --palette string       filename of the bead palette (default "colors_hama.json")
+      --sharpen float        apply sharpen filter (0.0 - 10.0)
+  -t, --translucent          include translucent colors for the conversion
+  -v, --verbose              verbose output
+  -w, --width int            resize image to width in pixel
+```
+
+## Example Usage
 To convert the sample yoshi image to Hama bead colors:
 
 ```bash
@@ -63,6 +63,7 @@ To convert the sample yoshi image to Hama bead colors:
 <img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/yoshi_thinking_in.png" alt="Yoshi thinking in" height="96" width="84"/> -> <img src="https://raw.githubusercontent.com/CornelK/beadmachine/master/examples/yoshi_thinking_out.png" alt="Yoshi thinking out" height="96" width="84"/>
 
 And will print out a statistic:
+
 ```bash
 Input image width: 28, height: 32
 Bead boards width: 1, height: 1
@@ -101,17 +102,3 @@ Output image pixel width: 58, height: 86
 Bead colors used: 22
 ...
 ```
-
-### Installation
-You need to have a [Golang](http://golang.org/doc/install "") environment set up. Install beadmachine:
-
-```bash
-go install github.com/CornelK/beadmachine
-```
-
-### Todo
-- Mouse over hints in HTML pattern file for multiple same colored beads counts
-- Specify different width and height for board dimension
-- Perler bead palette
-- Support for giving bead stocks as input
-- GUI / Webservice
