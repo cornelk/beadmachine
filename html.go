@@ -17,8 +17,8 @@ import (
 )
 
 // writeHTMLBeadInstructionFile writes a HTML file with instructions on how to make the bead based image
-func (m *beadMachine) writeHTMLBeadInstructionFile(fileName string, outputImageBounds image.Rectangle, outputImage *image.RGBA, outputImageBeadNames []string) error {
-	htmlFile, err := os.Create(fileName)
+func (m *beadMachine) writeHTMLBeadInstructionFile(outputImageBounds image.Rectangle, outputImage *image.RGBA, outputImageBeadNames []string) error {
+	htmlFile, err := os.Create(m.htmlFileName)
 	if err != nil {
 		return errors.Wrap(err, "creating HTML bead instruction file")
 	}
@@ -94,8 +94,8 @@ func (m *beadMachine) writeHTMLBeadInstructionFile(fileName string, outputImageB
 	return nil
 }
 
-// FindSimilarColor finds the most similar color from bead palette to the given pixel
-func (m *beadMachine) FindSimilarColor(cfgLab map[chromath.Lab]string, pixel color.Color) string {
+// findSimilarColor finds the most similar color from bead palette to the given pixel
+func (m *beadMachine) findSimilarColor(cfgLab map[chromath.Lab]string, pixel color.Color) string {
 	m.colorMatchCacheLock.RLock()
 	match, found := m.colorMatchCache[pixel]
 	m.colorMatchCacheLock.RUnlock()
@@ -134,9 +134,9 @@ func (m *beadMachine) FindSimilarColor(cfgLab map[chromath.Lab]string, pixel col
 	return bestBeadMatch
 }
 
-// LoadPalette loads a palette from a json file and returns a LAB color palette
-func (m *beadMachine) LoadPalette(fileName string) (map[string]BeadConfig, map[chromath.Lab]string, error) {
-	cfgData, err := ioutil.ReadFile(fileName)
+// loadPalette loads a palette from a json file and returns a LAB color palette
+func (m *beadMachine) loadPalette() (map[string]BeadConfig, map[chromath.Lab]string, error) {
+	cfgData, err := ioutil.ReadFile(m.paletteFileName)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "opening palette file")
 	}
@@ -149,13 +149,13 @@ func (m *beadMachine) LoadPalette(fileName string) (map[string]BeadConfig, map[c
 
 	cfgLab := make(map[chromath.Lab]string)
 	for beadName, rgbOriginal := range cfg {
-		if m.greyScale == true && rgbOriginal.GreyShade == false { // only process grey shades in greyscale mode
+		if m.greyScale && !rgbOriginal.GreyShade { // only process grey shades in greyscale mode
 			continue
 		}
-		if m.translucent == false && rgbOriginal.Translucent == true { // only process translucent in translucent mode
+		if !m.translucent && rgbOriginal.Translucent { // only process translucent in translucent mode
 			continue
 		}
-		if m.flourescent == false && rgbOriginal.Flourescent == true { // only process flourescent in flourescent mode
+		if !m.flourescent && rgbOriginal.Flourescent { // only process flourescent in flourescent mode
 			continue
 		}
 

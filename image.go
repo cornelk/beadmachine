@@ -28,8 +28,8 @@ func readImageFile(FileName string) (image.Image, error) {
 }
 
 // processImage matches all pixel of the image to a matching bead
-func (m *beadMachine) processImage(imageBounds image.Rectangle, inputImage image.Image, outputImage *image.RGBA, paletteFileNameToLoad string) error {
-	beadConfig, beadLab, err := m.LoadPalette(paletteFileNameToLoad)
+func (m *beadMachine) processImage(imageBounds image.Rectangle, inputImage image.Image, outputImage *image.RGBA) error {
+	beadConfig, beadLab, err := m.loadPalette()
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func (m *beadMachine) processImage(imageBounds image.Rectangle, inputImage image
 				go func(pixel image.Point) { // pixel processing goroutine
 					defer pixelWaitGroup.Done()
 					oldPixel := inputImage.At(pixel.X, pixel.Y)
-					beadName := m.FindSimilarColor(beadLab, oldPixel)
+					beadName := m.findSimilarColor(beadLab, oldPixel)
 					beadUsageChan <- beadName
 
 					if m.htmlFileName != "" {
@@ -85,7 +85,7 @@ func (m *beadMachine) processImage(imageBounds image.Rectangle, inputImage image
 	<-m.beadStatsDone
 
 	if m.htmlFileName != "" {
-		return m.writeHTMLBeadInstructionFile(m.htmlFileName, imageBounds, outputImage, outputImageBeadNames)
+		return m.writeHTMLBeadInstructionFile(imageBounds, outputImage, outputImageBeadNames)
 	}
 	return nil
 }
@@ -118,18 +118,24 @@ func (m *beadMachine) applyFilters(inputImage image.Image) image.Image {
 
 // setOutputImagePixel sets a pixel in the output image or draws a bead in beadStyle mode
 func (m *beadMachine) setOutputImagePixel(outputImage *image.RGBA, coordinates image.Point, bead BeadConfig) {
-	rgbaMatch := color.RGBA{bead.R, bead.G, bead.B, 255} // A 255 = no transparency
-	if m.beadStyle {
-		for y := 0; y < 8; y++ {
-			for x := 0; x < 8; x++ {
-				if (x%7 == 0 && y%7 == 0) || (x > 2 && x < 5 && y > 2 && y < 5) { // all corner pixel + 2x2 in center
-					outputImage.SetRGBA((coordinates.X*8)+x, (coordinates.Y*8)+y, m.beadFillPixel)
-				} else {
-					outputImage.SetRGBA((coordinates.X*8)+x, (coordinates.Y*8)+y, rgbaMatch)
-				}
+	rgbaMatch := color.RGBA{
+		R: bead.R,
+		G: bead.G,
+		B: bead.B,
+		A: 255, // A 255 = no transparency
+	}
+	if !m.beadStyle {
+		outputImage.SetRGBA(coordinates.X, coordinates.Y, rgbaMatch)
+		return
+	}
+
+	for y := 0; y < 8; y++ {
+		for x := 0; x < 8; x++ {
+			if (x%7 == 0 && y%7 == 0) || (x > 2 && x < 5 && y > 2 && y < 5) { // all corner pixel + 2x2 in center
+				outputImage.SetRGBA((coordinates.X*8)+x, (coordinates.Y*8)+y, m.beadFillPixel)
+			} else {
+				outputImage.SetRGBA((coordinates.X*8)+x, (coordinates.Y*8)+y, rgbaMatch)
 			}
 		}
-	} else {
-		outputImage.SetRGBA(coordinates.X, coordinates.Y, rgbaMatch)
 	}
 }
