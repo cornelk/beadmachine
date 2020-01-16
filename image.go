@@ -9,8 +9,6 @@ import (
 
 	"github.com/disintegration/imaging"
 	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 )
 
 // readImageFile reads and decodes the given image file
@@ -30,8 +28,8 @@ func readImageFile(FileName string) (image.Image, error) {
 }
 
 // processImage matches all pixel of the image to a matching bead
-func processImage(cmd *cobra.Command, logger *zap.Logger, imageBounds image.Rectangle, inputImage image.Image, outputImage *image.RGBA, paletteFileNameToLoad string) error {
-	beadConfig, beadLab, err := LoadPalette(cmd, logger, paletteFileNameToLoad)
+func (m *beadMachine) processImage(imageBounds image.Rectangle, inputImage image.Image, outputImage *image.RGBA, paletteFileNameToLoad string) error {
+	beadConfig, beadLab, err := m.LoadPalette(paletteFileNameToLoad)
 	if err != nil {
 		return err
 	}
@@ -42,8 +40,7 @@ func processImage(cmd *cobra.Command, logger *zap.Logger, imageBounds image.Rect
 	workDone := make(chan struct{})
 
 	var outputImageBeadNames []string // TODO use pointer to bead config instead of string
-	htmlFileName, _ := cmd.Flags().GetString("html")
-	if htmlFileName != "" {
+	if m.htmlFileName != "" {
 		outputImageBeadNames = make([]string, pixelCount)
 	}
 
@@ -57,15 +54,15 @@ func processImage(cmd *cobra.Command, logger *zap.Logger, imageBounds image.Rect
 				go func(pixel image.Point) { // pixel processing goroutine
 					defer pixelWaitGroup.Done()
 					oldPixel := inputImage.At(pixel.X, pixel.Y)
-					beadName := FindSimilarColor(logger, beadLab, oldPixel)
+					beadName := m.FindSimilarColor(beadLab, oldPixel)
 					beadUsageChan <- beadName
 
-					if htmlFileName != "" {
+					if m.htmlFileName != "" {
 						outputImageBeadNames[pixel.X+pixel.Y*imageBounds.Max.X] = beadName
 					}
 
 					matchRgb := beadConfig[beadName]
-					setOutputImagePixel(cmd, outputImage, pixel, matchRgb)
+					m.setOutputImagePixel(outputImage, pixel, matchRgb)
 				}(pixel)
 			case <-workDone:
 				return
@@ -73,7 +70,7 @@ func processImage(cmd *cobra.Command, logger *zap.Logger, imageBounds image.Rect
 		}
 	}()
 
-	go calculateBeadUsage(logger, beadUsageChan)
+	go m.calculateBeadUsage(beadUsageChan)
 
 	for y := imageBounds.Min.Y; y < imageBounds.Max.Y; y++ {
 		for x := imageBounds.Min.X; x < imageBounds.Max.X; x++ {
@@ -85,55 +82,48 @@ func processImage(cmd *cobra.Command, logger *zap.Logger, imageBounds image.Rect
 	workDone <- struct{}{}
 	close(workQueueChan)
 	close(beadUsageChan)
-	<-beadStatsDone
+	<-m.beadStatsDone
 
-	if htmlFileName != "" {
-		return writeHTMLBeadInstructionFile(cmd, htmlFileName, imageBounds, outputImage, outputImageBeadNames)
+	if m.htmlFileName != "" {
+		return m.writeHTMLBeadInstructionFile(m.htmlFileName, imageBounds, outputImage, outputImageBeadNames)
 	}
 	return nil
 }
 
 // applyfilters will apply all filters that were enabled to the input image
-func applyFilters(cmd *cobra.Command, inputImage image.Image) image.Image {
+func (m *beadMachine) applyFilters(inputImage image.Image) image.Image {
 	filteredImage := inputImage
 
-	greyScale, _ := cmd.Flags().GetBool("grey")
-	if greyScale {
+	if m.greyScale {
 		filteredImage = imaging.Grayscale(filteredImage)
 	}
-	filterBlur, _ := cmd.Flags().GetFloat64("blur")
-	if filterBlur != 0.0 {
-		filteredImage = imaging.Blur(filteredImage, filterBlur)
+	if m.blur != 0.0 {
+		filteredImage = imaging.Blur(filteredImage, m.blur)
 	}
-	filterSharpen, _ := cmd.Flags().GetFloat64("sharpen")
-	if filterSharpen != 0.0 {
-		filteredImage = imaging.Sharpen(filteredImage, filterSharpen)
+	if m.sharpen != 0.0 {
+		filteredImage = imaging.Sharpen(filteredImage, m.sharpen)
 	}
-	filterGamma, _ := cmd.Flags().GetFloat64("gamma")
-	if filterGamma != 0.0 {
-		filteredImage = imaging.AdjustGamma(filteredImage, filterGamma)
+	if m.gamma != 0.0 {
+		filteredImage = imaging.AdjustGamma(filteredImage, m.gamma)
 	}
-	filterContrast, _ := cmd.Flags().GetFloat64("contrast")
-	if filterContrast != 0.0 {
-		filteredImage = imaging.AdjustContrast(filteredImage, filterContrast)
+	if m.contrast != 0.0 {
+		filteredImage = imaging.AdjustContrast(filteredImage, m.contrast)
 	}
-	filterBrightness, _ := cmd.Flags().GetFloat64("brightness")
-	if filterBrightness != 0.0 {
-		filteredImage = imaging.AdjustBrightness(filteredImage, filterBrightness)
+	if m.brightness != 0.0 {
+		filteredImage = imaging.AdjustBrightness(filteredImage, m.brightness)
 	}
 
 	return filteredImage
 }
 
 // setOutputImagePixel sets a pixel in the output image or draws a bead in beadStyle mode
-func setOutputImagePixel(cmd *cobra.Command, outputImage *image.RGBA, coordinates image.Point, bead BeadConfig) {
+func (m *beadMachine) setOutputImagePixel(outputImage *image.RGBA, coordinates image.Point, bead BeadConfig) {
 	rgbaMatch := color.RGBA{bead.R, bead.G, bead.B, 255} // A 255 = no transparency
-	beadStyle, _ := cmd.Flags().GetBool("beadstyle")
-	if beadStyle {
+	if m.beadStyle {
 		for y := 0; y < 8; y++ {
 			for x := 0; x < 8; x++ {
 				if (x%7 == 0 && y%7 == 0) || (x > 2 && x < 5 && y > 2 && y < 5) { // all corner pixel + 2x2 in center
-					outputImage.SetRGBA((coordinates.X*8)+x, (coordinates.Y*8)+y, beadFillPixel)
+					outputImage.SetRGBA((coordinates.X*8)+x, (coordinates.Y*8)+y, m.beadFillPixel)
 				} else {
 					outputImage.SetRGBA((coordinates.X*8)+x, (coordinates.Y*8)+y, rgbaMatch)
 				}
