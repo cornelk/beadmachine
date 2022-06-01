@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"os"
@@ -8,20 +9,19 @@ import (
 	"sync"
 
 	"github.com/disintegration/imaging"
-	"github.com/pkg/errors"
 )
 
 // readImageFile reads and decodes the given image file
 func readImageFile(FileName string) (image.Image, error) {
 	imageReader, err := os.Open(FileName)
 	if err != nil {
-		return nil, errors.Wrap(err, "opening image file")
+		return nil, fmt.Errorf("opening image file: %w", err)
 	}
 	defer imageReader.Close()
 
 	inputImage, _, err := image.Decode(imageReader)
 	if err != nil {
-		return nil, errors.Wrap(err, "decoding image file")
+		return nil, fmt.Errorf("decoding image file: %w", err)
 	}
 
 	return inputImage, nil

@@ -12,7 +12,6 @@ import (
 
 	"github.com/jkl1337/go-chromath"
 	"github.com/jkl1337/go-chromath/deltae"
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -20,7 +19,7 @@ import (
 func (m *beadMachine) writeHTMLBeadInstructionFile(outputImageBounds image.Rectangle, outputImage *image.RGBA, outputImageBeadNames []string) error {
 	htmlFile, err := os.Create(m.htmlFileName)
 	if err != nil {
-		return errors.Wrap(err, "creating HTML bead instruction file")
+		return fmt.Errorf("creating HTML bead instruction file: %w", err)
 	}
 
 	w := bufio.NewWriter(htmlFile)
@@ -138,13 +137,13 @@ func (m *beadMachine) findSimilarColor(cfgLab map[chromath.Lab]string, pixel col
 func (m *beadMachine) loadPalette() (map[string]BeadConfig, map[chromath.Lab]string, error) {
 	cfgData, err := ioutil.ReadFile(m.paletteFileName)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "opening palette file")
+		return nil, nil, fmt.Errorf("opening palette file: %w", err)
 	}
 
 	cfg := make(map[string]BeadConfig)
 	err = json.Unmarshal(cfgData, &cfg)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "unmarshalling palette file")
+		return nil, nil, fmt.Errorf("unmarshalling palette file: %w", err)
 	}
 
 	cfgLab := make(map[chromath.Lab]string)
