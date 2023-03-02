@@ -165,11 +165,11 @@
     "g": 28,
     "b": 99
   },
-  "H33 Flourescent Cerise": {
+  "H33 fluorescent Cerise": {
     "r": 190,
     "g": 24,
     "b": 48,
-    "Flourescent": true
+    "fluorescent": true
   },
   "H34 Neon yellow": {
     "r": 226,
@@ -196,29 +196,29 @@
     "g": 130,
     "b": 25
   },
-  "H39 Flourescent yellow": {
+  "H39 fluorescent yellow": {
     "r": 229,
     "g": 224,
     "b": 81,
-    "Flourescent": true
+    "fluorescent": true
   },
-  "H40 Flourescent orange": {
+  "H40 fluorescent orange": {
     "r": 201,
     "g": 68,
     "b": 23,
-    "Flourescent": true
+    "fluorescent": true
   },
-  "H41 Flourescent blue": {
+  "H41 fluorescent blue": {
     "r": 70,
     "g": 154,
     "b": 216,
-    "Flourescent": true
+    "fluorescent": true
   },
-  "H42 Flourescent green": { 
+  "H42 fluorescent green": {
     "r": 123,
     "g": 176,
     "b": 68,
-    "Flourescent": true
+    "fluorescent": true
   },
   "H43 Pastel Yellow": {
     "r": 241,
