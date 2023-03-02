@@ -6,17 +6,18 @@ import (
 	"fmt"
 	"image"
 	"image/color"
-	"io/ioutil"
 	"os"
 	"strings"
 
+	"github.com/cornelk/gotokit/log"
 	"github.com/jkl1337/go-chromath"
 	"github.com/jkl1337/go-chromath/deltae"
-	"go.uber.org/zap"
 )
 
-// writeHTMLBeadInstructionFile writes a HTML file with instructions on how to make the bead based image
-func (m *beadMachine) writeHTMLBeadInstructionFile(outputImageBounds image.Rectangle, outputImage *image.RGBA, outputImageBeadNames []string) error {
+// writeHTMLBeadInstructionFile writes a HTML file with instructions on how to make the bead based image.
+func (m *beadMachine) writeHTMLBeadInstructionFile(outputImageBounds image.Rectangle, outputImage *image.RGBA,
+	outputImageBeadNames []string) error {
+
 	htmlFile, err := os.Create(m.htmlFileName)
 	if err != nil {
 		return fmt.Errorf("creating HTML bead instruction file: %w", err)
@@ -54,10 +55,8 @@ func (m *beadMachine) writeHTMLBeadInstructionFile(outputImageBounds image.Recta
 			w.WriteString("<td bgcolor=\"" + colorstring + "\"")
 			if x == 0 {
 				w.WriteString(" class=\"lb\"") // draw left bead board vertical border
-			} else {
-				if (x+1)%m.boardDimension == 0 { // draw bead board vertical border
-					w.WriteString(" class=\"rb\"")
-				}
+			} else if (x+1)%m.boardDimension == 0 { // draw bead board vertical border
+				w.WriteString(" class=\"rb\"")
 			}
 			w.WriteString(">&nbsp;</td>")
 		}
@@ -77,10 +76,8 @@ func (m *beadMachine) writeHTMLBeadInstructionFile(outputImageBounds image.Recta
 			w.WriteString("<td")
 			if x == 0 {
 				w.WriteString(" class=\"lb\"") // draw left bead board vertical border
-			} else {
-				if (x+1)%m.boardDimension == 0 { // draw bead board vertical border
-					w.WriteString(" class=\"rb\"")
-				}
+			} else if (x+1)%m.boardDimension == 0 { // draw bead board vertical border
+				w.WriteString(" class=\"rb\"")
 			}
 			w.WriteString(">&nbsp;" + shortName[0] + "&nbsp;</td>") // only print first part of name
 		}
@@ -93,7 +90,7 @@ func (m *beadMachine) writeHTMLBeadInstructionFile(outputImageBounds image.Recta
 	return nil
 }
 
-// findSimilarColor finds the most similar color from bead palette to the given pixel
+// findSimilarColor finds the most similar color from bead palette to the given pixel.
 func (m *beadMachine) findSimilarColor(cfgLab map[chromath.Lab]string, pixel color.Color) string {
 	m.colorMatchCacheLock.RLock()
 	match, found := m.colorMatchCache[pixel]
@@ -123,26 +120,29 @@ func (m *beadMachine) findSimilarColor(cfgLab map[chromath.Lab]string, pixel col
 			minDistance = distance
 			bestBeadMatch = beadName
 		}
-		m.logger.Debug("Matched color", zap.String("bead", beadName), zap.Float64("distance", distance))
+		m.logger.Debug("Matched color",
+			log.String("bead", beadName),
+			log.Float64("distance", distance))
 	}
 
-	m.logger.Debug("Best color match", zap.String("bead", bestBeadMatch), zap.Float64("distance", minDistance))
+	m.logger.Debug("Best color match",
+		log.String("bead", bestBeadMatch),
+		log.Float64("distance", minDistance))
 	m.colorMatchCacheLock.Lock()
 	m.colorMatchCache[pixel] = bestBeadMatch
 	m.colorMatchCacheLock.Unlock()
 	return bestBeadMatch
 }
 
-// loadPalette loads a palette from a json file and returns a LAB color palette
+// loadPalette loads a palette from a json file and returns a LAB color palette.
 func (m *beadMachine) loadPalette() (map[string]BeadConfig, map[chromath.Lab]string, error) {
-	cfgData, err := ioutil.ReadFile(m.paletteFileName)
+	cfgData, err := os.ReadFile(m.paletteFileName)
 	if err != nil {
 		return nil, nil, fmt.Errorf("opening palette file: %w", err)
 	}
 
 	cfg := make(map[string]BeadConfig)
-	err = json.Unmarshal(cfgData, &cfg)
-	if err != nil {
+	if err = json.Unmarshal(cfgData, &cfg); err != nil {
 		return nil, nil, fmt.Errorf("unmarshalling palette file: %w", err)
 	}
 
@@ -154,7 +154,7 @@ func (m *beadMachine) loadPalette() (map[string]BeadConfig, map[chromath.Lab]str
 		if !m.translucent && rgbOriginal.Translucent { // only process translucent in translucent mode
 			continue
 		}
-		if !m.flourescent && rgbOriginal.Flourescent { // only process flourescent in flourescent mode
+		if !m.fluorescent && rgbOriginal.fluorescent { // only process fluorescent in fluorescent mode
 			continue
 		}
 
@@ -163,9 +163,9 @@ func (m *beadMachine) loadPalette() (map[string]BeadConfig, map[chromath.Lab]str
 		lab := m.labTransformer.Invert(xyz)
 		cfgLab[lab] = beadName
 		m.logger.Debug("Bead loaded",
-			zap.String("bead", beadName),
-			zap.Any("RGB", rgb),
-			zap.Any("Lab", lab),
+			log.String("bead", beadName),
+			log.Object("RGB", rgb),
+			log.Object("Lab", lab),
 		)
 	}
 

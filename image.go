@@ -11,9 +11,9 @@ import (
 	"github.com/disintegration/imaging"
 )
 
-// readImageFile reads and decodes the given image file
-func readImageFile(FileName string) (image.Image, error) {
-	imageReader, err := os.Open(FileName)
+// readImageFile reads and decodes the given image file.
+func readImageFile(fileName string) (image.Image, error) {
+	imageReader, err := os.Open(fileName)
 	if err != nil {
 		return nil, fmt.Errorf("opening image file: %w", err)
 	}
@@ -27,7 +27,7 @@ func readImageFile(FileName string) (image.Image, error) {
 	return inputImage, nil
 }
 
-// processImage matches all pixel of the image to a matching bead
+// processImage matches all pixel of the image to a matching bead.
 func (m *beadMachine) processImage(imageBounds image.Rectangle, inputImage image.Image, outputImage *image.RGBA) error {
 	beadConfig, beadLab, err := m.loadPalette()
 	if err != nil {
@@ -74,7 +74,10 @@ func (m *beadMachine) processImage(imageBounds image.Rectangle, inputImage image
 
 	for y := imageBounds.Min.Y; y < imageBounds.Max.Y; y++ {
 		for x := imageBounds.Min.X; x < imageBounds.Max.X; x++ {
-			workQueueChan <- image.Point{x, y}
+			workQueueChan <- image.Point{
+				X: x,
+				Y: y,
+			}
 		}
 	}
 
@@ -90,7 +93,7 @@ func (m *beadMachine) processImage(imageBounds image.Rectangle, inputImage image
 	return nil
 }
 
-// applyfilters will apply all filters that were enabled to the input image
+// applyFilters will apply all filters that were enabled to the input image.
 func (m *beadMachine) applyFilters(inputImage image.Image) image.Image {
 	filteredImage := inputImage
 
@@ -116,7 +119,7 @@ func (m *beadMachine) applyFilters(inputImage image.Image) image.Image {
 	return filteredImage
 }
 
-// setOutputImagePixel sets a pixel in the output image or draws a bead in beadStyle mode
+// setOutputImagePixel sets a pixel in the output image or draws a bead in beadStyle mode.
 func (m *beadMachine) setOutputImagePixel(outputImage *image.RGBA, coordinates image.Point, bead BeadConfig) {
 	rgbaMatch := color.RGBA{
 		R: bead.R,

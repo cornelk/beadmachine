@@ -1,3 +1,4 @@
+// Package main implements a Bead pattern creator.
 package main
 
 import (
@@ -5,83 +6,69 @@ import (
 	"image/color"
 	_ "image/gif"
 	_ "image/jpeg"
+	"os"
 
+	"github.com/alexflint/go-arg"
+	"github.com/cornelk/gotokit/env"
+	"github.com/cornelk/gotokit/log"
 	chromath "github.com/jkl1337/go-chromath"
-	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 )
 
-func main() {
-	rootCmd := &cobra.Command{
-		Use:   "beadmachine file.jpg",
-		Short: "Bead pattern creator",
-		Run:   startBeadMachine,
-	}
+const toolName = "beadmachine"
 
-	rootCmd.Flags().BoolP("verbose", "v", false, "verbose output")
+type arguments struct {
+	Verbose bool `arg:"-v,--verbose" help:"verbose output"`
 
 	// files
-	rootCmd.Flags().StringP("input", "i", "", "image to process")
-	rootCmd.Flags().StringP("output", "o", "", "output filename for the converted PNG image")
-	rootCmd.Flags().StringP("html", "l", "", "output filename for a HTML based bead pattern file")
-	rootCmd.Flags().StringP("palette", "p", "colors_hama.json", "filename of the bead palette")
+	InputFileName   string `arg:"-i,--input" help:"image to process"`
+	OutputFileName  string `arg:"-o,--output" help:"output filename for the converted PNG image"`
+	HTMLFileName    string `arg:"-l,--html" help:"output filename for a HTML based bead pattern file"`
+	PaletteFileName string `arg:"-p,--palette" help:"filename of the bead palette" default:"colors_hama.json"`
 
 	// dimensions
-	rootCmd.Flags().IntP("width", "w", 0, "resize image to width in pixel")
-	rootCmd.Flags().IntP("height", "e", 0, "resize image to height in pixel")
-	rootCmd.Flags().IntP("boardswidth", "x", 0, "resize image to width in amount of boards")
-	rootCmd.Flags().IntP("boardsheight", "y", 0, "resize image to height in amount of boards")
-	rootCmd.Flags().IntP("boarddimension", "d", 20, "dimension of a board")
+	Width          int `arg:"-w,--width" help:"resize image to width in pixel"`
+	Height         int `arg:"-e,--height" help:"resize image to height in pixel"`
+	BoardWidth     int `arg:"-x,--boardwidth" help:"resize image to width in amount of boards"`
+	BoardHeight    int `arg:"-y,--boardheight" help:"resize image to height in amount of boards"`
+	BoardDimension int `arg:"-y,--boarddimension" help:"dimension of a board" default:"20"`
 
 	// bead types
-	rootCmd.Flags().BoolP("beadstyle", "b", false, "make output file look like a beads board")
-	rootCmd.Flags().BoolP("translucent", "t", false, "include translucent colors for the conversion")
-	rootCmd.Flags().BoolP("flourescent", "f", false, "include flourescent colors for the conversion")
+	BeadStyle   bool `arg:"-b,--beadstyle" help:"make output file look like a beads board"`
+	Translucent bool `arg:"-t,--translucent" help:"include translucent colors for the conversion"`
+	fluorescent bool `arg:"-f,--fluorescent" help:"include fluorescent colors for the conversion"`
 
 	// filters
-	rootCmd.Flags().BoolP("nocolormatching", "n", false, "skip the bead color matching")
-	rootCmd.Flags().BoolP("grey", "g", false, "convert the image to greyscale")
-	rootCmd.Flags().Float64P("blur", "", 0.0, "apply blur filter (0.0 - 10.0)")
-	rootCmd.Flags().Float64P("sharpen", "", 0.0, "apply sharpen filter (0.0 - 10.0)")
-	rootCmd.Flags().Float64P("gamma", "", 0.0, "apply gamma correction (0.0 - 10.0)")
-	rootCmd.Flags().Float64P("contrast", "", 0.0, "apply contrast adjustment (-100 - 100)")
-	rootCmd.Flags().Float64P("brightness", "", 0.0, "apply brightness adjustment (-100 - 100)")
+	NoColorMatching bool    `arg:"-n,--nocolormatching" help:"skip the bead color matching"`
+	GreyScale       bool    `arg:"-g,--grey" help:"convert the image to greyscale"`
+	Blur            float64 `arg:"--blur" help:"apply blur filter (0.0 - 10.0)"`
+	Sharpen         float64 `arg:"--sharpen" help:"apply sharpen filter (0.0 - 10.0)"`
+	Gamma           float64 `arg:"--gamma" help:"apply gamma filter (0.0 - 10.0)"`
+	Contrast        float64 `arg:"--contrast" help:"apply contrast adjustment (-100 - 100)"`
+	Brightness      float64 `arg:"--brightness" help:"apply brightness adjustment (-100 - 100)"`
+}
 
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Printf("ERROR: %v\n", err)
+func (arguments) Description() string {
+	return "Bead pattern creator.\n"
+}
+
+func main() {
+	var args arguments
+	arg.MustParse(&args)
+
+	if err := run(args); err != nil {
+		fmt.Printf("Execution error: %s\n", err)
+		os.Exit(1)
 	}
 }
 
-func startBeadMachine(cmd *cobra.Command, args []string) {
-	if len(args) == 0 {
-		_ = cmd.Help()
-		return
+func run(args arguments) error {
+	if args.Verbose {
+		log.SetDefaultLevel(log.DebugLevel)
 	}
-
-	logger := logger(cmd)
-
-	inputFileName, _ := cmd.Flags().GetString("input")
-	outputFileName, _ := cmd.Flags().GetString("output")
-	htmlFileName, _ := cmd.Flags().GetString("html")
-	paletteFileName, _ := cmd.Flags().GetString("palette")
-
-	width, _ := cmd.Flags().GetInt("width")
-	height, _ := cmd.Flags().GetInt("height")
-	newWidthBoards, _ := cmd.Flags().GetInt("boardswidth")
-	newHeightBoards, _ := cmd.Flags().GetInt("boardsheight")
-	boardDimension, _ := cmd.Flags().GetInt("boarddimension")
-
-	beadStyle, _ := cmd.Flags().GetBool("beadstyle")
-	useTranslucent, _ := cmd.Flags().GetBool("translucent")
-	useFlourescent, _ := cmd.Flags().GetBool("flourescent")
-
-	noColorMatching, _ := cmd.Flags().GetBool("nocolormatching")
-	greyScale, _ := cmd.Flags().GetBool("grey")
-	filterBlur, _ := cmd.Flags().GetFloat64("blur")
-	filterSharpen, _ := cmd.Flags().GetFloat64("sharpen")
-	filterGamma, _ := cmd.Flags().GetFloat64("gamma")
-	filterContrast, _ := cmd.Flags().GetFloat64("contrast")
-	filterBrightness, _ := cmd.Flags().GetFloat64("brightness")
+	logger, err := createLogger()
+	if err != nil {
+		return fmt.Errorf("creating logger: %w", err)
+	}
 
 	m := &beadMachine{
 		logger: logger,
@@ -92,48 +79,50 @@ func startBeadMachine(cmd *cobra.Command, args []string) {
 
 		labTransformer: chromath.NewLabTransformer(&chromath.IlluminantRefD50),
 		rgbTransformer: chromath.NewRGBTransformer(&chromath.SpaceSRGB, &chromath.AdaptationBradford, &chromath.IlluminantRefD50, &chromath.Scaler8bClamping, 1.0, nil),
-		beadFillPixel:  color.RGBA{225, 225, 225, 255}, // light grey
+		beadFillPixel: color.RGBA{
+			R: 225,
+			G: 225,
+			B: 225,
+			A: 255}, // light grey
 
-		inputFileName:   inputFileName,
-		outputFileName:  outputFileName,
-		paletteFileName: paletteFileName,
-		htmlFileName:    htmlFileName,
+		inputFileName:   args.InputFileName,
+		outputFileName:  args.OutputFileName,
+		paletteFileName: args.PaletteFileName,
+		htmlFileName:    args.HTMLFileName,
 
-		boardDimension: boardDimension,
-		width:          width,
-		boardsWidth:    newWidthBoards,
-		height:         height,
-		boardsHeight:   newHeightBoards,
+		boardDimension: args.BoardDimension,
+		width:          args.Width,
+		boardsWidth:    args.BoardWidth,
+		height:         args.Height,
+		boardsHeight:   args.BoardHeight,
 
-		beadStyle:       beadStyle,
-		noColorMatching: noColorMatching,
-		greyScale:       greyScale,
-		translucent:     useTranslucent,
-		flourescent:     useFlourescent,
+		beadStyle:       args.BeadStyle,
+		noColorMatching: args.NoColorMatching,
+		greyScale:       args.GreyScale,
+		translucent:     args.Translucent,
+		fluorescent:     args.fluorescent,
 
-		blur:       filterBlur,
-		sharpen:    filterSharpen,
-		gamma:      filterGamma,
-		contrast:   filterContrast,
-		brightness: filterBrightness,
+		blur:       args.Blur,
+		sharpen:    args.Sharpen,
+		gamma:      args.Gamma,
+		contrast:   args.Contrast,
+		brightness: args.Brightness,
 	}
-	m.process()
+	return m.process()
 }
 
-func logger(cmd *cobra.Command) *zap.Logger {
-	config := zap.NewDevelopmentConfig()
-	config.Development = false
-	config.DisableCaller = true
-	config.DisableStacktrace = true
-
-	level := config.Level
-	verbose, _ := cmd.Flags().GetBool("verbose")
-	if verbose {
-		level.SetLevel(zap.DebugLevel)
-	} else {
-		level.SetLevel(zap.InfoLevel)
+func createLogger() (*log.Logger, error) {
+	logCfg, err := log.ConfigForEnv(env.Development)
+	if err != nil {
+		return nil, fmt.Errorf("initializing log config: %w", err)
 	}
+	logCfg.JSONOutput = false
+	logCfg.CallerInfo = false
 
-	log, _ := config.Build()
-	return log
+	logger, err := log.NewWithConfig(logCfg)
+	if err != nil {
+		return nil, fmt.Errorf("initializing logger: %w", err)
+	}
+	logger = logger.Named(toolName)
+	return logger, nil
 }

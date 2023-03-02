@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	_ "image/gif"
@@ -11,21 +12,21 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cornelk/gotokit/log"
 	"github.com/disintegration/imaging"
 	chromath "github.com/jkl1337/go-chromath"
-	"go.uber.org/zap"
 )
 
-// BeadConfig configures a bead color
+// BeadConfig configures a bead color.
 type BeadConfig struct {
 	R, G, B     uint8
 	GreyShade   bool
 	Translucent bool
-	Flourescent bool
+	fluorescent bool
 }
 
 type beadMachine struct {
-	logger *zap.Logger
+	logger *log.Logger
 
 	colorMatchCache     map[color.Color]string
 	colorMatchCacheLock sync.RWMutex
@@ -50,7 +51,7 @@ type beadMachine struct {
 
 	beadStyle   bool
 	translucent bool
-	flourescent bool
+	fluorescent bool
 
 	noColorMatching bool
 	greyScale       bool
@@ -61,17 +62,16 @@ type beadMachine struct {
 	brightness      float64
 }
 
-func (m *beadMachine) process() {
+func (m *beadMachine) process() error {
 	inputImage, err := readImageFile(m.inputFileName)
 	if err != nil {
-		m.logger.Error("Reading image file failed", zap.Error(err))
-		return
+		return fmt.Errorf("reading image file: %w", err)
 	}
 
 	imageBounds := inputImage.Bounds()
 	m.logger.Info("Image pixels",
-		zap.Int("width", imageBounds.Dx()),
-		zap.Int("height", imageBounds.Dy()))
+		log.Int("width", imageBounds.Dx()),
+		log.Int("height", imageBounds.Dy()))
 
 	inputImage = m.applyFilters(inputImage) // apply filters before resizing for better results
 
@@ -93,11 +93,11 @@ func (m *beadMachine) process() {
 	}
 
 	m.logger.Info("Bead board used",
-		zap.Int("width", calculateBeadBoardsNeeded(imageBounds.Dx())),
-		zap.Int("height", calculateBeadBoardsNeeded(imageBounds.Dy())))
+		log.Int("width", calculateBeadBoardsNeeded(imageBounds.Dx())),
+		log.Int("height", calculateBeadBoardsNeeded(imageBounds.Dy())))
 	m.logger.Info("Bead board measurement in cm",
-		zap.Float64("width", float64(imageBounds.Dx())*0.5),
-		zap.Float64("height", float64(imageBounds.Dy())*0.5))
+		log.Float64("width", float64(imageBounds.Dx())*0.5),
+		log.Float64("height", float64(imageBounds.Dy())*0.5))
 
 	beadModeImageBounds := imageBounds
 	if m.beadStyle { // each pixel will be a bead of 8x8 pixel
@@ -108,8 +108,8 @@ func (m *beadMachine) process() {
 
 	if resized || m.beadStyle {
 		m.logger.Info("Output image pixels",
-			zap.Int("width", imageBounds.Dx()),
-			zap.Int("height", imageBounds.Dy()))
+			log.Int("width", imageBounds.Dx()),
+			log.Int("height", imageBounds.Dy()))
 	}
 
 	if m.noColorMatching {
@@ -124,26 +124,25 @@ func (m *beadMachine) process() {
 	} else {
 		startTime := time.Now()
 		if err := m.processImage(imageBounds, inputImage, outputImage); err != nil {
-			m.logger.Error("Processing image failed", zap.Error(err))
-			return
+			return fmt.Errorf("processing image: %w", err)
 		}
 		elapsedTime := time.Since(startTime)
-		m.logger.Info("Image processed", zap.Duration("duration", elapsedTime))
+		m.logger.Info("Image processed", log.Duration("duration", elapsedTime))
 	}
 
 	imageWriter, err := os.Create(m.outputFileName)
 	if err != nil {
-		m.logger.Error("Opening output image file failed", zap.Error(err))
-		return
+		return fmt.Errorf("opening output image file: %w", err)
 	}
 	defer imageWriter.Close()
 
 	if err = png.Encode(imageWriter, outputImage); err != nil {
-		m.logger.Error("Encoding png file failed", zap.Error(err))
+		return fmt.Errorf("encoding png file: %w", err)
 	}
+	return nil
 }
 
-// calculateBeadUsage calculates the bead usage
+// calculateBeadUsage calculates the bead usage statistics.
 func (m *beadMachine) calculateBeadUsage(beadUsageChan <-chan string) {
 	colorUsageCounts := make(map[string]int)
 
@@ -151,14 +150,14 @@ func (m *beadMachine) calculateBeadUsage(beadUsageChan <-chan string) {
 		colorUsageCounts[beadName]++
 	}
 
-	m.logger.Info("Bead colors", zap.Int("count", len(colorUsageCounts)))
+	m.logger.Info("Bead colors", log.Int("count", len(colorUsageCounts)))
 	for usedColor, count := range colorUsageCounts {
-		m.logger.Info("Beads used", zap.String("color", usedColor), zap.Int("count", count))
+		m.logger.Info("Beads used", log.String("color", usedColor), log.Int("count", count))
 	}
 	m.beadStatsDone <- struct{}{}
 }
 
-// calculateBeadBoardsNeeded calculates the needed bead boards based on the standard size of 29 beads for a dimension
+// calculateBeadBoardsNeeded calculates the needed bead boards based on the standard size of 29 beads for a dimension.
 func calculateBeadBoardsNeeded(dimension int) int {
 	neededFloat := float64(dimension) / 29
 	neededFloat = math.Floor(neededFloat + .5)
