@@ -9,7 +9,6 @@ linters:
     - containedctx # detects struct contained context.Context field
     - contextcheck # check the function whether use a non-inherited context
     - decorder # check declaration order and count of types, constants, variables and functions
-    - depguard # Go linter that checks if package imports are in a list of acceptable packages
     - dogsled # Checks assignments with too many blank identifiers (e.g. x, _, _, _, := f())
     - durationcheck # check for two durations multiplied together
     - errname # Checks that errors are prefixed with the `Err` and error types are suffixed with the `Error`
