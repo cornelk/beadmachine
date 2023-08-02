@@ -14,8 +14,6 @@ import (
 	chromath "github.com/jkl1337/go-chromath"
 )
 
-const toolName = "beadmachine"
-
 type arguments struct {
 	Verbose bool `arg:"-v,--verbose" help:"verbose output"`
 
@@ -41,10 +39,10 @@ type arguments struct {
 	NoColorMatching bool    `arg:"-n,--nocolormatching" help:"skip the bead color matching"`
 	GreyScale       bool    `arg:"-g,--grey" help:"convert the image to greyscale"`
 	Blur            float64 `arg:"--blur" help:"apply blur filter (0.0 - 10.0)"`
-	Sharpen         float64 `arg:"--sharpen" help:"apply sharpen filter (0.0 - 10.0)"`
+	Sharpen         bool    `arg:"--sharpen" help:"apply sharpen filter"`
 	Gamma           float64 `arg:"--gamma" help:"apply gamma filter (0.0 - 10.0)"`
 	Contrast        float64 `arg:"--contrast" help:"apply contrast adjustment (-100 - 100)"`
-	Brightness      float64 `arg:"--brightness" help:"apply brightness adjustment (-100 - 100)"`
+	Brightness      float64 `arg:"--brightness" help:"apply brightness adjustment (-1 - 1)"`
 }
 
 func (arguments) Description() string {
@@ -123,6 +121,5 @@ func createLogger() (*log.Logger, error) {
 	if err != nil {
 		return nil, fmt.Errorf("initializing logger: %w", err)
 	}
-	logger = logger.Named(toolName)
 	return logger, nil
 }

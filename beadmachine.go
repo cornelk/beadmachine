@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/anthonynsimon/bild/transform"
 	"github.com/cornelk/gotokit/log"
-	"github.com/disintegration/imaging"
 	chromath "github.com/jkl1337/go-chromath"
 )
 
@@ -56,7 +56,7 @@ type beadMachine struct {
 	noColorMatching bool
 	greyScale       bool
 	blur            float64
-	sharpen         float64
+	sharpen         bool
 	gamma           float64
 	contrast        float64
 	brightness      float64
@@ -87,9 +87,21 @@ func (m *beadMachine) process() error {
 	}
 	resized := false
 	if newWidth > 0 || newHeight > 0 {
-		inputImage = imaging.Resize(inputImage, newWidth, newHeight, imaging.Lanczos)
-		imageBounds = inputImage.Bounds()
+		if newWidth == 0 {
+			dy := float64(newHeight) / float64(inputImage.Bounds().Dy())
+			newWidth = int(float64(inputImage.Bounds().Dx()) * dy)
+		}
+		if newHeight == 0 {
+			dx := float64(newWidth) / float64(inputImage.Bounds().Dx())
+			newHeight = int(float64(inputImage.Bounds().Dy()) * dx)
+		}
+
+		inputImage = transform.Resize(inputImage, newWidth, newHeight, transform.Lanczos)
 		resized = true
+	}
+	imageBounds = inputImage.Bounds()
+	if imageBounds.Dx() == 0 || imageBounds.Dy() == 0 {
+		m.logger.Fatal("An image dimension is 0")
 	}
 
 	m.logger.Info("Bead board used",

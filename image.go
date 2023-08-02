@@ -8,7 +8,9 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/disintegration/imaging"
+	"github.com/anthonynsimon/bild/adjust"
+	"github.com/anthonynsimon/bild/blur"
+	"github.com/anthonynsimon/bild/effect"
 )
 
 // readImageFile reads and decodes the given image file.
@@ -98,22 +100,22 @@ func (m *beadMachine) applyFilters(inputImage image.Image) image.Image {
 	filteredImage := inputImage
 
 	if m.greyScale {
-		filteredImage = imaging.Grayscale(filteredImage)
+		filteredImage = effect.Grayscale(filteredImage)
 	}
 	if m.blur != 0.0 {
-		filteredImage = imaging.Blur(filteredImage, m.blur)
+		filteredImage = blur.Gaussian(filteredImage, m.blur)
 	}
-	if m.sharpen != 0.0 {
-		filteredImage = imaging.Sharpen(filteredImage, m.sharpen)
+	if m.sharpen {
+		filteredImage = effect.Sharpen(filteredImage)
 	}
 	if m.gamma != 0.0 {
-		filteredImage = imaging.AdjustGamma(filteredImage, m.gamma)
+		filteredImage = adjust.Gamma(filteredImage, m.gamma)
 	}
 	if m.contrast != 0.0 {
-		filteredImage = imaging.AdjustContrast(filteredImage, m.contrast)
+		filteredImage = adjust.Contrast(filteredImage, m.contrast)
 	}
 	if m.brightness != 0.0 {
-		filteredImage = imaging.AdjustBrightness(filteredImage, m.brightness)
+		filteredImage = adjust.Brightness(filteredImage, m.brightness)
 	}
 
 	return filteredImage

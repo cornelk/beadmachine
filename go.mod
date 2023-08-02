@@ -4,8 +4,8 @@ go 1.18
 
 require (
 	github.com/alexflint/go-arg v1.4.3
+	github.com/anthonynsimon/bild v0.13.0
 	github.com/cornelk/gotokit v0.0.0-20230714042603-996e3ea8c77f
-	github.com/disintegration/imaging v1.6.2
 	github.com/jkl1337/go-chromath v0.0.0-20140428033135-240283655afd
 )
 
@@ -17,7 +17,6 @@ require (
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/stretchr/testify v1.8.4 // indirect
 	golang.org/x/exp v0.0.0-20230713183714-613f0c0eb8a1 // indirect
-	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

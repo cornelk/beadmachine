@@ -24,3 +24,8 @@ install-linters: ## install all linters
 
 release-snapshot: ## build release binaries from current git state as snapshot
 	goreleaser release --snapshot --clean
+
+generate-examples: ## regenerate example outputs
+	go build .
+	./beadmachine -i examples/mona_lisa_in.jpg -o examples/mona_lisa_out.png -w 58 -b --blur 2
+	./beadmachine -i examples/yoshi_thinking_in.png -o examples/yoshi_thinking_out.png
