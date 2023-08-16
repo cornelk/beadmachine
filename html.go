@@ -158,7 +158,11 @@ func (m *beadMachine) loadPalette() (map[string]BeadConfig, map[chromath.Lab]str
 			continue
 		}
 
-		rgb := chromath.RGB{float64(rgbOriginal.R), float64(rgbOriginal.G), float64(rgbOriginal.B)}
+		rgb := chromath.RGB{
+			float64(rgbOriginal.R),
+			float64(rgbOriginal.G),
+			float64(rgbOriginal.B),
+		}
 		xyz := m.rgbTransformer.Convert(rgb)
 		lab := m.labTransformer.Invert(xyz)
 		cfgLab[lab] = beadName
