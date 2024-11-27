@@ -1,4 +1,4 @@
-GOLANGCI_VERSION = v1.53.3
+GOLANGCI_VERSION = v1.61.0
 
 help: ## show help, shown by default if no target is specified
 	@grep -E '^[0-9a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -21,6 +21,9 @@ install: ## install all binaries
 
 install-linters: ## install all linters
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@${GOLANGCI_VERSION}
+
+release: ## build release binaries for current git tag and publish on github
+	goreleaser release
 
 release-snapshot: ## build release binaries from current git state as snapshot
 	goreleaser release --snapshot --clean
